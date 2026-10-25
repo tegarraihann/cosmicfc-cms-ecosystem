@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Rancangan Section Visibility — COSMIC CMS</title>
+<style>
+@page{size:A4;margin:14mm 15mm 16mm}*{box-sizing:border-box}body{margin:0;color:#142235;background:#fff;font-family:Arial,sans-serif;font-size:9.5pt;line-height:1.48}h1,h2,h3,p{margin-top:0}h1,h2,h3,.display{font-family:Impact,"Arial Narrow",sans-serif;text-transform:uppercase;letter-spacing:.03em}h1{font-size:34pt;line-height:.93;margin-bottom:16px}h2{font-size:20pt;margin-bottom:12px}h3{font-size:11pt;margin-bottom:7px}.blue{color:#168dde}.muted{color:#607184}.cover{height:267mm;display:flex;flex-direction:column;justify-content:space-between;padding:17mm 13mm;color:#f5f9fd;background:#06111f}.cover .tag,.eyebrow{color:#45b7ff;font-weight:800;font-size:8pt;letter-spacing:.18em;text-transform:uppercase}.cover .line{width:54px;height:5px;margin:20px 0;background:#45b7ff}.cover h1{font-size:48pt;max-width:150mm}.cover .summary{max-width:126mm;color:#aabccc;font-size:12pt}.cover footer{display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid #29445e;color:#7390a8;font-size:8pt}.page{page-break-before:always}.section{margin-bottom:18px}.lead{font-size:12pt;color:#40566a}.callout{padding:12px 14px;border-left:4px solid #45b7ff;background:#edf7fd}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.card{padding:12px;border:1px solid #cad7e1;border-radius:5px}.card h3{color:#137fc0}.table{width:100%;border-collapse:collapse;margin:8px 0 16px}.table th,.table td{padding:7px 8px;border:1px solid #d3dde5;vertical-align:top;text-align:left}.table th{color:#fff;background:#0a2238;font-size:8pt;text-transform:uppercase;letter-spacing:.06em}.table tr:nth-child(even) td{background:#f4f8fb}.flow{display:flex;align-items:center;gap:6px;margin:10px 0}.flow span{flex:1;padding:10px 5px;border:1px solid #9ecce8;border-radius:4px;background:#eef8fe;text-align:center;font-size:8pt;font-weight:700}.flow b{color:#168dde}.wire{padding:13px;border:1px solid #9fb4c5;background:#f8fafc}.wire-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.wire-button{padding:6px 10px;border-radius:3px;color:#04101c;background:#45b7ff;font-size:8pt;font-weight:800}.wire-row{display:grid;grid-template-columns:28px 1fr 72px 66px;align-items:center;gap:8px;margin-top:7px;padding:9px;border:1px solid #d6e0e7;background:white}.handle{color:#8998a5;text-align:center}.switch{padding:5px;border-radius:12px;color:#fff;background:#168dde;text-align:center;font-size:7pt;font-weight:700}.switch.off{background:#8c99a3}.badge{padding:4px;border:1px solid #c9d4dc;border-radius:10px;text-align:center;font-size:7pt}.schema{padding:13px;color:#d5e7f4;background:#07111e;font:8.5pt/1.55 Consolas,monospace;white-space:pre-wrap}.rules li,.checks li{margin-bottom:6px}.page-number{position:fixed;right:0;bottom:-9mm;color:#81909c;font-size:7pt}.small{font-size:8pt}.avoid{break-inside:avoid}.footer-note{margin-top:18px;padding-top:8px;border-top:1px solid #d2dce4;color:#748594;font-size:8pt}
+</style>
+</head>
+<body>
+<section class="cover">
+  <div><div class="tag">COSMIC CMS · Product Design</div><div class="line"></div><h1>Section<br><span class="blue">Visibility.</span></h1><p class="summary">Rancangan fitur untuk menyembunyikan, menampilkan, mengurutkan, mempreview, dan mempublikasikan section website COSMIC dari dashboard admin.</p></div>
+  <footer><span>Versi 1.0</span><span>20 Oktober 2026</span><span>Pekanbaru, Indonesia</span></footer>
+</section>
+
+<section class="page">
+<div class="eyebrow">01 · Tujuan</div><h2>Ringkasan Rancangan<span class="blue">.</span></h2>
+<p class="lead">Superadmin dan role yang diberi izin dapat mengatur komposisi setiap halaman publik tanpa mengubah kode. Perubahan disimpan sebagai draft terlebih dahulu agar website aktif tidak berubah secara tidak sengaja.</p>
+<div class="callout"><strong>Keputusan utama:</strong> visibilitas dan urutan section dikelola di database. Navbar dan footer merupakan elemen sistem yang selalu tampil pada versi pertama. Isi section belum diedit lewat fitur ini; pengaturan konten menjadi modul lanjutan.</div>
+<div class="section"><h3>Sasaran</h3><div class="grid">
+ <div class="card"><h3>Kontrol</h3><p>Toggle tampil/sembunyi per section, urutkan dengan drag-and-drop, dan reset ke susunan bawaan.</p></div>
+ <div class="card"><h3>Keamanan</h3><p>Draft dan versi terbit dipisahkan, divalidasi, dicatat dalam audit log, serta dibatasi dengan permission.</p></div>
+ <div class="card"><h3>Konsistensi</h3><p>Daftar section memakai registry komponen yang telah disetujui; admin tidak dapat menyisipkan komponen arbitrer.</p></div>
+ <div class="card"><h3>Performa</h3><p>Konfigurasi publik dicache dan hanya section aktif yang dirender di Vue.</p></div>
+</div></div>
+<h3>Ruang Lingkup Versi 1</h3>
+<table class="table"><tr><th>Termasuk</th><th>Belum termasuk</th></tr><tr><td>Visibilitas, urutan, draft, preview, publish, reset, permission dan audit dasar.</td><td>Editor teks/gambar setiap section, penambahan tipe section baru dari UI, jadwal publikasi otomatis, multibahasa.</td></tr></table>
+<div class="page-number">2</div>
+</section>
+
+<section class="page">
+<div class="eyebrow">02 · Inventaris</div><h2>Section Saat Ini<span class="blue">.</span></h2>
+<table class="table"><tr><th>Halaman</th><th>Section yang dapat diatur</th><th>Jumlah</th></tr>
+<tr><td><strong>Beranda</strong></td><td>Hero, Next Match, Match Center, Meet The Squad, Club Culture, Tentang COSMIC.</td><td>6</td></tr>
+<tr><td><strong>Jadwal</strong></td><td>Hero Jadwal, Next Match, Match Schedule, Hasil Pertandingan, Klasemen Ringkas, CTA Gabung Klub.</td><td>6</td></tr>
+<tr><td><strong>Liga</strong></td><td>Hero Liga, Ringkasan Musim, Klasemen Lengkap, Performa COSMIC, Top Players, Matchday Center, Klub Peserta, Competition Rules, Follow The Journey.</td><td>9</td></tr>
+<tr><td><strong>Tim</strong></td><td>Hero Tim, Daftar Pemain, Player of the Month, Captain Spotlight, Coaching Staff, Statistik Skuad, Komposisi Posisi, Join The Collective.</td><td>8</td></tr></table>
+<p class="small"><strong>Elemen tetap:</strong> SiteNavbar dan SiteFooter. Modal profil pemain mengikuti section Daftar Pemain/Player of the Month dan bukan item mandiri.</p>
+<h3>Identitas Stabil</h3>
+<table class="table"><tr><th>Contoh key</th><th>Label admin</th><th>Komponen Vue</th></tr>
+<tr><td>home.hero</td><td>Hero Beranda</td><td>HeroSection</td></tr><tr><td>home.next_match</td><td>Next Match</td><td>NextMatchSection</td></tr><tr><td>schedule.results</td><td>Hasil Pertandingan</td><td>MatchResultsSection</td></tr><tr><td>league.standings</td><td>Klasemen Lengkap</td><td>FullStandingsSection</td></tr><tr><td>team.player_month</td><td>Player of the Month</td><td>PlayerOfMonthSection</td></tr></table>
+<div class="callout"><strong>Aturan key:</strong> key tidak berubah ketika label tampilan diganti. Dengan begitu data konfigurasi tetap terhubung ke komponen yang benar.</div>
+<div class="page-number">3</div>
+</section>
+
+<section class="page">
+<div class="eyebrow">03 · Pengalaman Admin</div><h2>Alur Penggunaan<span class="blue">.</span></h2>
+<div class="flow"><span>Pilih halaman</span><b>→</b><span>Atur section</span><b>→</b><span>Simpan draft</span><b>→</b><span>Preview</span><b>→</b><span>Publikasikan</span></div>
+<h3>Wireframe — Kelola Landing Page</h3>
+<div class="wire avoid"><div class="wire-head"><div><strong>BERANDA</strong><br><small>6 section · Draft memiliki perubahan</small></div><div><span class="wire-button">Preview Draft</span> <span class="wire-button">Publikasikan</span></div></div>
+<div class="wire-row"><span class="handle">⠿</span><span><strong>Hero Beranda</strong><br><small>Bagian pembuka halaman</small></span><span class="badge">Wajib</span><span class="switch">Tampil</span></div>
+<div class="wire-row"><span class="handle">⠿</span><span><strong>Next Match</strong><br><small>Pertandingan terdekat</small></span><span class="badge">Opsional</span><span class="switch">Tampil</span></div>
+<div class="wire-row"><span class="handle">⠿</span><span><strong>Match Center</strong><br><small>Jadwal dan hasil ringkas</small></span><span class="badge">Opsional</span><span class="switch off">Sembunyi</span></div>
+<div class="wire-row"><span class="handle">⠿</span><span><strong>Meet The Squad</strong><br><small>Sorotan pemain</small></span><span class="badge">Opsional</span><span class="switch">Tampil</span></div></div>
+<div class="section"><h3>Respons Sistem</h3><ul class="rules"><li>Toggle dan urutan langsung mengubah draft lokal, belum memengaruhi website publik.</li><li>Bar “Perubahan belum diterbitkan” muncul setelah draft berbeda dari versi publik.</li><li>Preview membuka URL bertoken sementara dan tidak terindeks mesin pencari.</li><li>Publish meminta konfirmasi serta menampilkan ringkasan perubahan.</li><li>Jika semua section opsional dimatikan, sistem tetap mempertahankan Hero pada V1.</li></ul></div>
+<div class="page-number">4</div>
+</section>
+
+<section class="page">
+<div class="eyebrow">04 · Model Data</div><h2>Arsitektur Konfigurasi<span class="blue">.</span></h2>
+<div class="schema">page_layouts
+├── id
+├── page_key          // home, schedule, league, team
+├── status            // draft | published
+├── version           // integer
+├── published_at      // nullable
+├── published_by      // nullable user FK
+└── timestamps
+
+page_sections
+├── id
+├── page_layout_id    // FK
+├── section_key       // home.next_match
+├── label             // label dashboard
+├── component         // registry key, bukan path bebas
+├── is_visible        // boolean
+├── is_locked         // hero dapat dikunci
+├── sort_order        // integer
+├── settings          // JSON, disiapkan untuk fase editor konten
+└── timestamps
+
+page_layout_audits
+├── page_layout_id, user_id, action
+├── before_payload, after_payload
+└── created_at</div>
+<h3 style="margin-top:16px">Registry Frontend</h3>
+<p>Frontend menggunakan peta komponen statis. Database hanya menyimpan key yang diizinkan, sehingga nama file atau kode tidak pernah dieksekusi dari input admin.</p>
+<div class="schema">const sectionRegistry = {
+  'home.hero': HeroSection,
+  'home.next_match': NextMatchSection,
+  'home.match_center': MatchCenterSection,
+  // ...
+}
+
+visibleSections
+  .sort((a, b) =&gt; a.sort_order - b.sort_order)
+  .map(section =&gt; sectionRegistry[section.section_key])</div>
+<div class="page-number">5</div>
+</section>
+
+<section class="page">
+<div class="eyebrow">05 · Status & Publikasi</div><h2>Siklus Perubahan<span class="blue">.</span></h2>
+<div class="grid">
+<div class="card"><h3>Published</h3><p>Versi yang dibaca pengunjung. Dicache per halaman dan tidak berubah hingga aksi publish berhasil.</p></div>
+<div class="card"><h3>Draft</h3><p>Salinan kerja admin. Dapat disimpan berulang kali, dipreview, dan dibatalkan tanpa memengaruhi publik.</p></div>
+<div class="card"><h3>Publish</h3><p>Validasi registry, duplikasi key, urutan, minimal section, kemudian transaksi database dan invalidasi cache.</p></div>
+<div class="card"><h3>Restore</h3><p>“Batalkan perubahan” mengembalikan draft ke published. Riwayat versi penuh dapat ditambahkan pada fase berikutnya.</p></div>
+</div>
+<h3>Permission yang Diusulkan</h3>
+<table class="table"><tr><th>Permission</th><th>Kemampuan</th><th>Default</th></tr>
+<tr><td>landing.view</td><td>Melihat susunan section dan status.</td><td>Admin + Superadmin</td></tr>
+<tr><td>landing.update</td><td>Mengubah visibilitas, urutan, dan menyimpan draft.</td><td>Admin + Superadmin</td></tr>
+<tr><td>landing.preview</td><td>Membuka preview draft bertoken.</td><td>Admin + Superadmin</td></tr>
+<tr><td>landing.publish</td><td>Menerbitkan atau membatalkan draft.</td><td>Superadmin; dapat didelegasikan</td></tr></table>
+<h3>Audit Minimum</h3><p>Catat pelaku, waktu, halaman, aksi, daftar section yang berubah, nilai sebelum/sesudah, dan versi terbit. Jangan hanya mencatat pesan umum “landing page diperbarui”.</p>
+<div class="page-number">6</div>
+</section>
+
+<section class="page">
+<div class="eyebrow">06 · Kontrak Teknis</div><h2>API & Rendering<span class="blue">.</span></h2>
+<table class="table"><tr><th>Method & endpoint</th><th>Fungsi</th></tr>
+<tr><td>GET /admin/pages</td><td>Daftar halaman, status draft, dan waktu publish.</td></tr>
+<tr><td>GET /admin/pages/{page}</td><td>Editor section untuk satu halaman.</td></tr>
+<tr><td>PUT /admin/pages/{page}/draft</td><td>Simpan visibilitas dan urutan draft.</td></tr>
+<tr><td>POST /admin/pages/{page}/publish</td><td>Validasi dan terbitkan draft secara atomik.</td></tr>
+<tr><td>POST /admin/pages/{page}/discard</td><td>Reset draft dari versi published.</td></tr>
+<tr><td>GET /preview/{page}?token=...</td><td>Preview draft aman dan sementara.</td></tr></table>
+<h3>Payload Draft</h3><div class="schema">{
+  "sections": [
+    { "key": "home.hero", "visible": true, "order": 10 },
+    { "key": "home.next_match", "visible": true, "order": 20 },
+    { "key": "home.match_center", "visible": false, "order": 30 }
+  ]
+}</div>
+<h3 style="margin-top:16px">Strategi Rendering Publik</h3>
+<ol class="rules"><li>Controller mengambil konfigurasi published dari cache.</li><li>Inertia mengirim daftar key aktif dan urutannya ke page Vue.</li><li>Vue menyaring registry lalu merender komponen sesuai urutan.</li><li>Jika konfigurasi belum tersedia, fallback memakai urutan bawaan saat ini.</li><li>Section tidak aktif tidak dibuat di DOM, sehingga GSAP/ScrollTrigger tidak mengikat animasi yang tidak digunakan.</li></ol>
+<div class="page-number">7</div>
+</section>
+
+<section class="page">
+<div class="eyebrow">07 · Aturan & Kualitas</div><h2>Kriteria Penerimaan<span class="blue">.</span></h2>
+<ul class="checks"><li>Admin berizin dapat menyembunyikan section dan perubahan belum terlihat publik sebelum publish.</li><li>Urutan section dapat diubah dengan drag-and-drop serta tombol naik/turun untuk aksesibilitas.</li><li>Navbar dan footer tetap tampil meskipun seluruh section opsional disembunyikan.</li><li>Preview menampilkan draft terbaru dan tidak mengubah cache publik.</li><li>Publish berjalan dalam transaksi dan tidak menghasilkan halaman setengah terbarui.</li><li>Role tanpa <code>landing.update</code> tidak dapat memanggil endpoint update secara langsung.</li><li>Section key yang tidak terdaftar ditolak oleh validator.</li><li>Tampilan editor berfungsi pada desktop dan smartphone.</li><li>Publik tetap memakai susunan bawaan apabila data konfigurasi rusak atau belum disiapkan.</li><li>Setiap publish menghasilkan audit yang dapat ditelusuri.</li></ul>
+<h3>Risiko dan Mitigasi</h3>
+<table class="table"><tr><th>Risiko</th><th>Mitigasi</th></tr><tr><td>Admin menyembunyikan konten penting.</td><td>Section wajib dikunci, dialog konfirmasi, preview, dan fallback.</td></tr><tr><td>Komponen lama bergantung pada posisi DOM.</td><td>Uji GSAP/ScrollTrigger per halaman setelah filtering dan reorder.</td></tr><tr><td>Draft menimpa perubahan admin lain.</td><td>Optimistic locking dengan version/updated_at dan pesan konflik.</td></tr><tr><td>Cache menampilkan versi lama.</td><td>Invalidasi cache hanya setelah transaksi publish berhasil.</td></tr><tr><td>Hak akses hanya disembunyikan di UI.</td><td>Middleware permission wajib pada seluruh endpoint mutasi.</td></tr></table>
+<div class="footer-note">Dokumen ini menjadi spesifikasi rancangan V1. Detail editor konten section dibahas sebagai fitur terpisah agar scope visibilitas tetap terukur.</div>
+<div class="page-number">8</div>
+</section>
+</body></html>

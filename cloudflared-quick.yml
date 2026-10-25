@@ -1,0 +1,2 @@
+# Intentionally empty: prevents the account-level named-tunnel ingress rules
+# from being applied when running an ephemeral Quick Tunnel for this project.
