@@ -40,6 +40,9 @@ class HandleInertiaRequests extends Middleware
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
+                    'email_verified_at' => $user->email_verified_at?->toIso8601String(),
+                    'pending_email' => $user->pending_email,
+                    'must_change_email' => $user->must_change_email,
                     'role' => $user->roleRelation?->slug ?? $user->role?->value,
                     'role_name' => $user->roleRelation?->name ?? $user->role?->label(),
                     'permissions' => $user->isSuperAdmin()

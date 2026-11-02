@@ -81,9 +81,26 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        User::updateOrCreate(
-            ['email' => env('SUPERADMIN_EMAIL', 'superadmin@cosmic.test')],
-            ['name' => 'Cosmic Super Administrator', 'role' => UserRole::SuperAdmin, 'role_id' => $superadmin->id, 'email_verified_at' => now(), 'password' => env('SUPERADMIN_PASSWORD', 'CosmicSuperAdmin2026!')],
-        );
+        $bootstrapSuperadmin = User::where('role', UserRole::SuperAdmin)->first();
+
+        if ($bootstrapSuperadmin) {
+            // Deployment berikutnya tidak boleh mengembalikan email/password yang
+            // sudah diamankan oleh pemilik akun ke nilai awal dari environment.
+            $bootstrapSuperadmin->forceFill([
+                'role_id' => $superadmin->id,
+                'is_active' => true,
+            ])->save();
+        } else {
+            User::create([
+                'name' => 'Cosmic Super Administrator',
+                'email' => env('SUPERADMIN_EMAIL', 'superadmin@cosmic.test'),
+                'role' => UserRole::SuperAdmin,
+                'role_id' => $superadmin->id,
+                'email_verified_at' => now(),
+                'must_change_email' => true,
+                'is_active' => true,
+                'password' => env('SUPERADMIN_PASSWORD', 'CosmicSuperAdmin2026!'),
+            ]);
+        }
     }
 }

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Panduan Setup SMTP dan Mail Verification — COSMIC CMS</title>
+<style>
+@page{size:A4;margin:14mm 15mm 16mm}*{box-sizing:border-box}body{margin:0;color:#142235;background:#fff;font:9.5pt/1.52 Arial,sans-serif}h1,h2,h3,p{margin-top:0}h1,h2,h3{font-family:Impact,"Arial Narrow",sans-serif;text-transform:uppercase;letter-spacing:.025em}h1{font-size:42pt;line-height:.94}h2{font-size:22pt;margin-bottom:10px}h3{font-size:11pt;margin:14px 0 7px}.blue{color:#168dde}.cover{height:267mm;display:flex;flex-direction:column;justify-content:space-between;padding:17mm 13mm;color:#f5f9fd;background:#06111f}.tag,.eyebrow{color:#45b7ff;font-weight:800;font-size:8pt;letter-spacing:.18em;text-transform:uppercase}.cover .line{width:55px;height:5px;margin:20px 0;background:#45b7ff}.cover p{max-width:145mm;color:#adbfce;font-size:12pt}.cover footer{display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid #29445e;color:#7390a8;font-size:8pt}.page{page-break-before:always}.lead{font-size:11.5pt;color:#40566a}.callout{padding:11px 13px;border-left:4px solid #45b7ff;background:#edf7fd;break-inside:avoid}.warning{border-left-color:#ffb54a;background:#fff7e8}.danger{border-left-color:#dc4c64;background:#fff0f2}.success{border-left-color:#28a874;background:#edf9f4}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.card{padding:11px 12px;border:1px solid #cad7e1;border-radius:5px;break-inside:avoid}.card h3{margin-top:0;color:#137fc0}.table{width:100%;border-collapse:collapse;margin:8px 0 14px;break-inside:avoid}.table th,.table td{padding:7px 8px;border:1px solid #d3dde5;vertical-align:top;text-align:left}.table th{color:#fff;background:#0a2238;font-size:8pt;text-transform:uppercase}.table tr:nth-child(even) td{background:#f4f8fb}.steps{counter-reset:item;padding:0;list-style:none}.steps>li{position:relative;margin:0 0 10px;padding:10px 12px 10px 42px;border:1px solid #cfdae3;break-inside:avoid}.steps>li:before{counter-increment:item;content:counter(item);position:absolute;left:11px;top:10px;display:grid;width:22px;height:22px;place-items:center;color:#fff;background:#168dde;font-weight:800}.checks{padding-left:18px}.checks li{margin-bottom:5px}.code{margin:8px 0 13px;padding:10px 12px;border:1px solid #c9d7e2;border-radius:4px;color:#e7f4ff;background:#071727;font:8.5pt/1.55 Consolas,"Courier New",monospace;white-space:pre-wrap;word-break:break-word;break-inside:avoid}.inline{padding:1px 4px;color:#0d6599;background:#edf6fb;font-family:Consolas,monospace}.badge{display:inline-block;padding:2px 6px;border:1px solid #58aada;color:#137fc0;font-size:7pt;font-weight:700;text-transform:uppercase}.page-number{position:fixed;right:0;bottom:-9mm;color:#81909c;font-size:7pt}.footer-note{margin-top:14px;padding-top:8px;border-top:1px solid #d2dce4;color:#748594;font-size:8pt}.compact li{margin-bottom:3px}.flow{display:flex;align-items:center;gap:5px;margin:12px 0;break-inside:avoid}.flow span{flex:1;padding:9px 4px;border:1px solid #9ecce8;border-radius:4px;background:#eef8fe;text-align:center;font-size:7.5pt;font-weight:700}.flow b{color:#168dde}
+</style>
+</head>
+<body>
+<section class="cover"><div><div class="tag">COSMIC CMS · Panduan Deployment</div><div class="line"></div><h1>Setup SMTP<br><span class="blue">& Verifikasi<br>Email.</span></h1><p>Panduan langkah demi langkah untuk menghubungkan email hosting dengan COSMIC CMS, menguji pengiriman undangan akun, dan memverifikasi perubahan email superadmin.</p></div><footer><span>Panduan Administrator</span><span>Versi 1.0 · 2 November 2026</span><span>Production Ready</span></footer></section>
+
+<section class="page"><div class="eyebrow">01 · Gambaran Umum</div><h2>Apa yang Akan Disiapkan<span class="blue">.</span></h2><p class="lead">SMTP adalah jalur yang digunakan COSMIC CMS untuk mengirim email dari alamat resmi hosting. Setelah SMTP aktif, sistem dapat mengirim undangan akun dan tautan verifikasi email.</p>
+<div class="flow"><span>COSMIC CMS</span><b>→</b><span>SMTP Hosting</span><b>→</b><span>Email Pengguna</span><b>→</b><span>Aktivasi Akun</span></div>
+<table class="table"><tr><th>Fitur</th><th>Fungsi</th></tr><tr><td>Undangan pengguna</td><td>Admin baru menerima tautan untuk memverifikasi email dan membuat password sendiri.</td></tr><tr><td>Perubahan email superadmin</td><td>Email baru tidak langsung aktif. Sistem mengirim tautan verifikasi lebih dahulu.</td></tr><tr><td>Kirim ulang</td><td>Superadmin dapat mengirim ulang undangan yang belum diterima atau sudah kedaluwarsa.</td></tr><tr><td>Keamanan</td><td>Tautan memakai token sekali pakai dan memiliki masa berlaku.</td></tr></table>
+<div class="callout"><strong>Kondisi superadmin pertama:</strong> akun hasil seeder tetap dapat langsung login menggunakan email dan password dari file <span class="inline">.env</span>. Setelah login, ganti email bawaan dengan email operasional yang dapat diakses.</div>
+<h3>Yang perlu disiapkan</h3><ul class="checks"><li>Akses cPanel atau panel hosting.</li><li>Satu akun email resmi, misalnya <strong>noreply@domainanda.com</strong>.</li><li>Host SMTP, port, username, dan password email.</li><li>Akses File Manager atau SSH ke folder aplikasi Laravel.</li><li>Domain production sudah memakai HTTPS.</li></ul><div class="page-number">2</div></section>
+
+<section class="page"><div class="eyebrow">02 · Membuat Email Hosting</div><h2>Buat Akun Pengirim<span class="blue">.</span></h2><ol class="steps"><li>Masuk ke <strong>cPanel</strong> menggunakan akun hosting.</li><li>Buka menu <strong>Email Accounts</strong> atau <strong>Akun Email</strong>.</li><li>Klik <strong>Create</strong> atau <strong>Buat</strong>.</li><li>Pilih domain website COSMIC.</li><li>Gunakan nama seperti <strong>noreply</strong>, <strong>system</strong>, atau <strong>admin</strong>. Contoh: <strong>noreply@cosmicfc.id</strong>.</li><li>Buat password yang kuat dan simpan di password manager.</li><li>Atur kapasitas mailbox secukupnya, lalu simpan.</li></ol>
+<div class="callout warning"><strong>Disarankan:</strong> gunakan akun email khusus sistem. Jangan menggunakan email pribadi dan jangan memakai password cPanel sebagai password SMTP.</div>
+<h3>Catat konfigurasi SMTP</h3><p>Pada daftar akun email, klik <strong>Connect Devices</strong>, <strong>Set Up Mail Client</strong>, atau menu sejenis. Catat informasi berikut:</p>
+<table class="table"><tr><th>Informasi</th><th>Contoh</th></tr><tr><td>SMTP host</td><td>mail.cosmicfc.id</td></tr><tr><td>SMTP port STARTTLS</td><td>587</td></tr><tr><td>SMTP port SSL/TLS</td><td>465</td></tr><tr><td>Username</td><td>Alamat email lengkap: noreply@cosmicfc.id</td></tr><tr><td>Password</td><td>Password akun email yang baru dibuat</td></tr></table>
+<div class="callout danger"><strong>Rahasia:</strong> password SMTP hanya ditulis di file <span class="inline">.env</span>. Jangan memasukkannya ke source code, GitHub, screenshot, atau dokumen publik.</div><div class="page-number">3</div></section>
+
+<section class="page"><div class="eyebrow">03 · Memilih Port</div><h2>Gunakan Konfigurasi yang Tepat<span class="blue">.</span></h2><p>Gunakan salah satu konfigurasi yang diberikan hosting. Pilihan yang paling umum adalah port 587.</p>
+<div class="grid"><div class="card"><h3>Port 587 — Disarankan</h3><p>Menggunakan koneksi SMTP dan meningkatkan keamanan melalui STARTTLS.</p><div class="code">MAIL_SCHEME=smtp
+MAIL_PORT=587</div></div><div class="card"><h3>Port 465</h3><p>Menggunakan TLS sejak awal koneksi. Gunakan jika hosting secara khusus meminta SSL/TLS port 465.</p><div class="code">MAIL_SCHEME=smtps
+MAIL_PORT=465</div></div></div>
+<div class="callout warning"><strong>Jangan mencampur konfigurasi:</strong> port 587 biasanya menggunakan <span class="inline">smtp</span>, sedangkan port 465 menggunakan <span class="inline">smtps</span>. Jika ragu, mulai dari port 587.</div>
+<h3>Jika hosting hanya memberi port 25</h3><p>Port 25 sering diblokir atau tidak menggunakan enkripsi yang memadai. Hubungi penyedia hosting dan minta konfigurasi SMTP aman port 587 atau 465.</p>
+<h3>Pastikan alamat pengirim sama</h3><p>Beberapa hosting menolak pengiriman jika <span class="inline">MAIL_FROM_ADDRESS</span> berbeda dengan <span class="inline">MAIL_USERNAME</span>. Untuk pengaturan awal, gunakan alamat yang sama.</p><div class="page-number">4</div></section>
+
+<section class="page"><div class="eyebrow">04 · Konfigurasi Laravel</div><h2>Edit File .env Production<span class="blue">.</span></h2><ol class="steps"><li>Buka <strong>File Manager</strong> cPanel.</li><li>Masuk ke folder aplikasi COSMIC CMS.</li><li>Aktifkan <strong>Show Hidden Files</strong> agar file <span class="inline">.env</span> terlihat.</li><li>Buat salinan cadangan file <span class="inline">.env</span> sebelum mengubahnya.</li><li>Edit bagian konfigurasi mail menggunakan data dari hosting.</li></ol>
+<h3>Contoh port 587</h3><div class="code">MAIL_MAILER=smtp
+MAIL_SCHEME=smtp
+MAIL_HOST=mail.domainanda.com
+MAIL_PORT=587
+MAIL_USERNAME=noreply@domainanda.com
+MAIL_PASSWORD="PASSWORD_EMAIL_ANDA"
+MAIL_FROM_ADDRESS=noreply@domainanda.com
+MAIL_FROM_NAME="COSMIC CMS"</div>
+<h3>Contoh port 465</h3><div class="code">MAIL_MAILER=smtp
+MAIL_SCHEME=smtps
+MAIL_HOST=mail.domainanda.com
+MAIL_PORT=465
+MAIL_USERNAME=noreply@domainanda.com
+MAIL_PASSWORD="PASSWORD_EMAIL_ANDA"
+MAIL_FROM_ADDRESS=noreply@domainanda.com
+MAIL_FROM_NAME="COSMIC CMS"</div>
+<div class="callout"><strong>Ganti semua contoh:</strong> ubah domain, username, dan password sesuai informasi SMTP hosting Anda. Tanda kutip pada password disarankan, terutama jika password memiliki karakter khusus.</div>
+<div class="callout danger" style="margin-top:10px"><strong>Jangan gunakan:</strong> <span class="inline">MAIL_MAILER=log</span> pada production. Konfigurasi tersebut hanya menulis isi email ke log dan tidak mengirim email kepada pengguna.</div><div class="page-number">5</div></section>
+
+<section class="page"><div class="eyebrow">05 · URL dan Cache</div><h2>Pastikan Tautan Mengarah ke Domain Production<span class="blue">.</span></h2><p>Tautan aktivasi dan verifikasi dibuat berdasarkan alamat aplikasi. Karena itu, <span class="inline">APP_URL</span> harus memakai domain production, bukan localhost.</p>
+<div class="code">APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://domainanda.com
+FORCE_HTTPS=true
+PUBLIC_ORIGIN=https://domainanda.com</div>
+<p>Jika aplikasi dipasang pada subdomain, gunakan alamat lengkap, misalnya:</p><div class="code">APP_URL=https://cosmic.domainanda.com
+PUBLIC_ORIGIN=https://cosmic.domainanda.com</div>
+<h3>Bersihkan cache konfigurasi</h3><p>Setelah menyimpan <span class="inline">.env</span>, jalankan melalui Terminal cPanel atau SSH dari folder aplikasi:</p>
+<div class="code">php artisan optimize:clear
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache</div>
+<div class="callout warning"><strong>Penting:</strong> Laravel dapat tetap memakai konfigurasi lama jika cache belum dibersihkan. Selalu jalankan perintah di atas setelah mengubah SMTP atau domain.</div>
+<h3>Pastikan database terbaru</h3><div class="code">php artisan migrate --force</div><p>Perintah ini menambahkan kolom status undangan, email yang menunggu verifikasi, token, dan waktu kedaluwarsa.</p><div class="page-number">6</div></section>
+
+<section class="page"><div class="eyebrow">06 · Pengujian SMTP</div><h2>Uji dengan Akun Baru<span class="blue">.</span></h2><ol class="steps"><li>Login sebagai superadmin.</li><li>Buka menu <strong>Pengguna & Role / Kelola Akses</strong>.</li><li>Klik <strong>Tambah Pengguna</strong>.</li><li>Isi nama, alamat email yang benar-benar dapat Anda buka, role, dan status akun.</li><li>Klik <strong>Kirim Undangan</strong>.</li><li>Tunggu 1–5 menit lalu periksa Inbox, Spam, dan Promotions.</li><li>Buka tombol <strong>Aktifkan Akun</strong> dari email.</li><li>Buat password baru dan konfirmasi password.</li><li>Login menggunakan alamat email dan password yang baru dibuat.</li></ol>
+<h3>Hasil yang benar</h3><ul class="checks"><li>Sebelum tautan dibuka, status akun adalah <span class="badge">Menunggu Aktivasi</span>.</li><li>Setelah aktivasi, status berubah menjadi <span class="badge">Aktif & Terverifikasi</span>.</li><li>Pengguna dapat login jika opsi Akun Aktif dinyalakan.</li><li>Password tidak pernah ditentukan atau diketahui oleh superadmin.</li></ul>
+<div class="callout success"><strong>Berhasil:</strong> jika email diterima, tautan dapat dibuka, password dapat dibuat, dan akun dapat login, berarti SMTP dan mail verification sudah bekerja.</div>
+<div class="callout warning" style="margin-top:10px"><strong>Belum menerima email?</strong> jangan langsung membuat akun kedua dengan alamat yang sama. Gunakan aksi <strong>Kirim Ulang Undangan</strong> pada akun tersebut setelah memperbaiki SMTP.</div><div class="page-number">7</div></section>
+
+<section class="page"><div class="eyebrow">07 · Superadmin</div><h2>Ganti Email Awal Deployment<span class="blue">.</span></h2><p class="lead">Akun superadmin dari seeder tetap dapat login. Setelah SMTP berhasil diuji, ganti email bawaan dengan email operasional yang aman.</p>
+<ol class="steps"><li>Login memakai <span class="inline">SUPERADMIN_EMAIL</span> dan <span class="inline">SUPERADMIN_PASSWORD</span> dari environment production.</li><li>Buka menu profil akun dari bagian bawah sidebar.</li><li>Pada <strong>Email login</strong>, masukkan email operasional baru.</li><li>Masukkan password superadmin saat ini.</li><li>Klik <strong>Simpan Profil</strong>.</li><li>Buka Inbox email baru dan klik <strong>Verifikasi Email Baru</strong>.</li><li>Setelah berhasil, login berikutnya menggunakan alamat email baru.</li></ol>
+<h3>Perlindungan dari sistem</h3><ul class="checks"><li>Email lama tetap aktif sampai email baru dikonfirmasi.</li><li>Jika email tidak diterima, gunakan <strong>Kirim ulang tautan</strong>.</li><li>Jika alamat salah, gunakan <strong>Batalkan perubahan</strong>.</li><li>Tautan email baru berlaku selama 60 menit.</li><li>Seeder berikutnya tidak mengembalikan email dan password ke nilai awal.</li></ul>
+<div class="callout danger"><strong>Setelah selesai:</strong> simpan kredensial superadmin di password manager. Jangan membagikannya melalui chat atau menuliskannya pada dokumen publik.</div><div class="page-number">8</div></section>
+
+<section class="page"><div class="eyebrow">08 · Pemecahan Masalah</div><h2>Jika Email Tidak Terkirim<span class="blue">.</span></h2><table class="table"><tr><th>Gejala</th><th>Penyebab yang mungkin</th><th>Solusi</th></tr><tr><td>Connection refused / timeout</td><td>Host atau port salah; port diblokir hosting.</td><td>Cocokkan data Connect Devices dan tanyakan port SMTP yang dibuka.</td></tr><tr><td>Authentication failed</td><td>Username/password salah.</td><td>Gunakan alamat email lengkap dan reset password mailbox bila perlu.</td></tr><tr><td>Certificate error</td><td>Hostname tidak cocok dengan sertifikat.</td><td>Gunakan hostname SMTP resmi dari hosting, bukan alamat buatan sendiri.</td></tr><tr><td>Email masuk Spam</td><td>Reputasi domain atau DNS email belum lengkap.</td><td>Aktifkan SPF, DKIM, dan DMARC; tandai email sebagai bukan spam.</td></tr><tr><td>Tautan mengarah ke localhost</td><td>APP_URL atau cache masih lama.</td><td>Perbaiki APP_URL, PUBLIC_ORIGIN, lalu jalankan optimize:clear.</td></tr><tr><td>403 tautan tidak valid</td><td>Tautan kedaluwarsa, sudah digunakan, atau domain berubah.</td><td>Kirim ulang undangan/verifikasi dan buka tautan terbaru.</td></tr><tr><td>Email hanya muncul di log</td><td>MAIL_MAILER masih log.</td><td>Ubah menjadi smtp dan bersihkan cache konfigurasi.</td></tr></table>
+<h3>Periksa log Laravel</h3><p>Buka file terbaru pada folder <span class="inline">storage/logs</span>. Cari kata seperti <strong>SMTP</strong>, <strong>authentication</strong>, <strong>connection</strong>, atau <strong>certificate</strong>.</p>
+<div class="code">storage/logs/laravel.log</div>
+<div class="callout warning"><strong>Keamanan saat meminta bantuan:</strong> kirim pesan error yang relevan, tetapi hapus username, password, token, dan alamat email sensitif sebelum mengirim screenshot.</div><div class="page-number">9</div></section>
+
+<section class="page"><div class="eyebrow">09 · DNS dan Keamanan</div><h2>Agar Email Lebih Terpercaya<span class="blue">.</span></h2><p>SMTP dapat bekerja tanpa pengaturan tambahan, tetapi SPF, DKIM, dan DMARC membantu email tidak dianggap palsu atau masuk Spam.</p>
+<table class="table"><tr><th>DNS</th><th>Fungsi</th></tr><tr><td>SPF</td><td>Memberi tahu server penerima bahwa server hosting diizinkan mengirim email untuk domain Anda.</td></tr><tr><td>DKIM</td><td>Memberikan tanda tangan digital pada email untuk membuktikan email tidak diubah.</td></tr><tr><td>DMARC</td><td>Menentukan tindakan ketika email gagal pemeriksaan SPF atau DKIM.</td></tr></table>
+<ol class="steps"><li>Di cPanel buka <strong>Email Deliverability</strong>.</li><li>Pilih domain website.</li><li>Periksa status SPF dan DKIM.</li><li>Jika ada peringatan, klik <strong>Repair</strong> bila DNS dikelola oleh hosting.</li><li>Jika DNS dikelola Cloudflare, salin record yang disediakan cPanel ke menu DNS Cloudflare.</li><li>Untuk record email, gunakan mode <strong>DNS only</strong>, bukan proxy Cloudflare.</li></ol>
+<div class="callout"><strong>Catatan:</strong> perubahan DNS dapat membutuhkan waktu propagasi. Tunggu beberapa menit hingga beberapa jam sebelum menguji ulang.</div>
+<h3>Aturan password dan akun</h3><ul class="checks"><li>Gunakan password SMTP yang berbeda dari password cPanel.</li><li>Jangan menyimpan file <span class="inline">.env</span> di repository publik.</li><li>Batasi akses File Manager dan SSH.</li><li>Aktifkan 2FA pada akun hosting.</li><li>Nonaktifkan akun CMS yang sudah tidak digunakan.</li></ul><div class="page-number">10</div></section>
+
+<section class="page"><div class="eyebrow">10 · Checklist Production</div><h2>Pemeriksaan Terakhir<span class="blue">.</span></h2><div class="grid"><div class="card"><h3>Hosting</h3><ul class="checks compact"><li>Akun email sistem dibuat.</li><li>SMTP host dan port benar.</li><li>Password email tersimpan aman.</li><li>SPF dan DKIM valid.</li></ul></div><div class="card"><h3>Environment</h3><ul class="checks compact"><li>APP_ENV=production.</li><li>APP_DEBUG=false.</li><li>APP_URL memakai HTTPS.</li><li>MAIL_MAILER=smtp.</li><li>MAIL_FROM_ADDRESS benar.</li></ul></div><div class="card"><h3>Deployment</h3><ul class="checks compact"><li>Migrasi sudah dijalankan.</li><li>Cache konfigurasi dibersihkan.</li><li>Build frontend terbaru tersedia.</li><li>Folder storage dapat ditulis.</li></ul></div><div class="card"><h3>Pengujian</h3><ul class="checks compact"><li>Undangan diterima.</li><li>Password dapat dibuat.</li><li>Akun baru dapat login.</li><li>Email superadmin dapat diganti.</li><li>Kirim ulang berfungsi.</li></ul></div></div>
+<h3>Perintah deployment ringkas</h3><div class="code">php artisan migrate --force
+php artisan optimize:clear
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache</div>
+<div class="callout success"><strong>Setup dinyatakan selesai</strong> apabila email undangan tiba pada Inbox, tautan aktivasi bekerja, pengguna dapat membuat password, dan status pada Kelola Akses berubah menjadi Aktif & Terverifikasi.</div>
+<div class="footer-note">COSMIC CMS · Panduan Setup SMTP dan Mail Verification · Versi 1.0</div><div class="page-number">11</div></section>
+</body>
+</html>

@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Notifications\PendingEmailVerificationNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
@@ -24,12 +27,14 @@ class ProfileTest extends TestCase
     public function test_profile_information_can_be_updated(): void
     {
         $user = User::factory()->create();
+        Notification::fake();
 
         $response = $this
             ->actingAs($user)
             ->patch('/profile', [
                 'name' => 'Test User',
                 'email' => 'test@example.com',
+                'current_password' => 'password',
             ]);
 
         $response
@@ -39,8 +44,10 @@ class ProfileTest extends TestCase
         $user->refresh();
 
         $this->assertSame('Test User', $user->name);
-        $this->assertSame('test@example.com', $user->email);
-        $this->assertNull($user->email_verified_at);
+        $this->assertNotSame('test@example.com', $user->email);
+        $this->assertSame('test@example.com', $user->pending_email);
+        $this->assertNotNull($user->email_verified_at);
+        Notification::assertSentOnDemand(PendingEmailVerificationNotification::class);
     }
 
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void
@@ -61,38 +68,38 @@ class ProfileTest extends TestCase
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
-    public function test_user_can_delete_their_account(): void
+    public function test_pending_email_becomes_login_email_after_verification(): void
     {
-        $user = User::factory()->create();
+        $token = 'email-change-token';
+        $user = User::factory()->create([
+            'pending_email' => 'new-email@example.com',
+            'email_change_token' => hash('sha256', $token),
+            'email_change_expires_at' => now()->addHour(),
+            'must_change_email' => true,
+        ]);
+        $url = URL::temporarySignedRoute('email-change.verify', now()->addHour(), [
+            'user' => $user->id,
+            'token' => $token,
+        ]);
 
-        $response = $this
-            ->actingAs($user)
-            ->delete('/profile', [
-                'password' => 'password',
-            ]);
+        $this->actingAs($user)->get($url)
+            ->assertRedirect(route('profile.edit'));
 
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect('/');
-
-        $this->assertGuest();
-        $this->assertNull($user->fresh());
+        $user->refresh();
+        $this->assertSame('new-email@example.com', $user->email);
+        $this->assertNull($user->pending_email);
+        $this->assertFalse($user->must_change_email);
+        $this->assertNotNull($user->email_verified_at);
     }
 
-    public function test_correct_password_must_be_provided_to_delete_account(): void
+    public function test_users_cannot_delete_their_own_account_from_profile(): void
     {
         $user = User::factory()->create();
 
-        $response = $this
+        $this
             ->actingAs($user)
-            ->from('/profile')
-            ->delete('/profile', [
-                'password' => 'wrong-password',
-            ]);
-
-        $response
-            ->assertSessionHasErrors('password')
-            ->assertRedirect('/profile');
+            ->delete('/profile')
+            ->assertStatus(405);
 
         $this->assertNotNull($user->fresh());
     }

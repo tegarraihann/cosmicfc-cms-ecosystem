@@ -161,6 +161,7 @@ Route::get('/preview/{page}', [PublicPageController::class, 'preview'])
 Route::middleware(['auth', 'verified', 'superadmin'])->prefix('admin/access')->name('admin.access.')->group(function () {
     Route::get('/', [AccessManagementController::class, 'index'])->name('index');
     Route::post('/users', [AccessManagementController::class, 'storeUser'])->name('users.store');
+    Route::post('/users/{user}/resend-invitation', [AccessManagementController::class, 'resendInvitation'])->name('users.invitation.resend');
     Route::put('/users/{user}', [AccessManagementController::class, 'updateUser'])->name('users.update');
     Route::delete('/users/{user}', [AccessManagementController::class, 'destroyUser'])->name('users.destroy');
     Route::post('/roles', [AccessManagementController::class, 'storeRole'])->name('roles.store');
@@ -171,7 +172,8 @@ Route::middleware(['auth', 'verified', 'superadmin'])->prefix('admin/access')->n
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::post('/profile/pending-email/resend', [ProfileController::class, 'resendPendingEmail'])->middleware('throttle:3,1')->name('profile.email.resend');
+    Route::delete('/profile/pending-email', [ProfileController::class, 'cancelPendingEmail'])->name('profile.email.cancel');
 });
 
 require __DIR__.'/auth.php';

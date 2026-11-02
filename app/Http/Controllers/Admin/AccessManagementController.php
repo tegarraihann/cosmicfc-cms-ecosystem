@@ -7,12 +7,15 @@ use App\Http\Controllers\Controller;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Notifications\UserInvitationNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class AccessManagementController extends Controller
 {
@@ -24,6 +27,9 @@ class AccessManagementController extends Controller
                 'role_id' => $user->role_id, 'role' => $user->roleRelation?->name ?? $user->role?->label(),
                 'role_slug' => $user->roleRelation?->slug ?? $user->role?->value,
                 'is_active' => $user->is_active, 'last_login_at' => $user->last_login_at?->diffForHumans(),
+                'email_verified_at' => $user->email_verified_at?->toIso8601String(),
+                'invitation_expires_at' => $user->invitation_expires_at?->toIso8601String(),
+                'invitation_status' => $this->invitationStatus($user),
             ]),
             'roles' => Role::with('permissions')->withCount('users')->orderByDesc('is_system')->get(),
             'permissions' => Permission::orderBy('group')->orderBy('name')->get()->groupBy('group'),
@@ -33,11 +39,30 @@ class AccessManagementController extends Controller
 
     public function storeUser(Request $request): RedirectResponse
     {
-        $data = $request->validate(['name' => ['required', 'string', 'max:255'], 'email' => ['required', 'email', 'unique:users,email'], 'role_id' => ['required', 'exists:roles,id'], 'password' => ['required', 'min:8', 'confirmed'], 'is_active' => ['required', 'boolean']]);
+        $data = $request->validate(['name' => ['required', 'string', 'max:255'], 'email' => ['required', 'email', 'unique:users,email', 'unique:users,pending_email'], 'role_id' => ['required', 'exists:roles,id'], 'is_active' => ['required', 'boolean']]);
         $role = Role::findOrFail($data['role_id']);
-        User::create([...$data, 'role' => $this->legacyRole($role), 'email_verified_at' => now()]);
+        abort_if($role->slug === 'superadmin', 422, 'Akun superadmin tambahan tidak dapat dibuat melalui undangan.');
+        try {
+            DB::transaction(function () use ($data, $role): void {
+                $token = Str::random(64);
+                $user = User::create([
+                    ...$data,
+                    'role' => $this->legacyRole($role),
+                    'password' => Str::random(64),
+                    'email_verified_at' => null,
+                    'invitation_token' => hash('sha256', $token),
+                    'invitation_expires_at' => now()->addHours(24),
+                    'invited_at' => now(),
+                ]);
+                $user->notify(new UserInvitationNotification($token));
+            });
+        } catch (Throwable $exception) {
+            report($exception);
 
-        return back()->with('success', 'Pengguna berhasil ditambahkan.');
+            return back()->withErrors(['email' => 'Email undangan gagal dikirim. Periksa konfigurasi email lalu coba kembali.']);
+        }
+
+        return back()->with('success', 'Pengguna berhasil ditambahkan dan email undangan telah dikirim.');
     }
 
     public function updateUser(Request $request, User $user): RedirectResponse
@@ -45,8 +70,9 @@ class AccessManagementController extends Controller
         abort_if($user->isSuperAdmin() && $user->id !== $request->user()->id, 403);
         $data = $request->validate(['name' => ['required', 'string', 'max:255'], 'email' => ['required', 'email', Rule::unique('users')->ignore($user)], 'role_id' => ['required', 'exists:roles,id'], 'password' => ['nullable', 'min:8', 'confirmed'], 'is_active' => ['required', 'boolean']]);
         $role = Role::findOrFail($data['role_id']);
+        abort_if(strtolower($data['email']) !== strtolower($user->email), 422, 'Email tidak dapat diubah dari Kelola Akses. Pemilik akun harus mengubah dan memverifikasinya melalui halaman Profil.');
         abort_if($user->id === $request->user()->id && (! $data['is_active'] || $role->slug !== 'superadmin'), 422, 'Akun sendiri harus tetap aktif sebagai superadmin.');
-        if (blank($data['password'])) {
+        if (blank($data['password'] ?? null)) {
             unset($data['password']);
         }
         $user->update([...$data, 'role' => $this->legacyRole($role)]);
@@ -60,6 +86,30 @@ class AccessManagementController extends Controller
         $user->delete();
 
         return back()->with('success', 'Pengguna berhasil dihapus.');
+    }
+
+    public function resendInvitation(Request $request, User $user): RedirectResponse
+    {
+        abort_if($user->hasVerifiedEmail(), 422, 'Akun ini sudah terverifikasi.');
+        abort_if($user->isSuperAdmin(), 422, 'Undangan tidak digunakan untuk akun superadmin.');
+
+        $token = Str::random(64);
+        try {
+            DB::transaction(function () use ($user, $token): void {
+                $user->forceFill([
+                    'invitation_token' => hash('sha256', $token),
+                    'invitation_expires_at' => now()->addHours(24),
+                    'invited_at' => now(),
+                ])->save();
+                $user->notify(new UserInvitationNotification($token));
+            });
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->withErrors(['email' => 'Undangan gagal dikirim ulang. Periksa konfigurasi email lalu coba kembali.']);
+        }
+
+        return back()->with('success', 'Undangan aktivasi berhasil dikirim ulang.');
     }
 
     public function storeRole(Request $request): RedirectResponse
@@ -99,5 +149,14 @@ class AccessManagementController extends Controller
         return match ($role->slug) {
             'superadmin' => UserRole::SuperAdmin, 'admin' => UserRole::Admin, default => UserRole::Member
         };
+    }
+
+    private function invitationStatus(User $user): string
+    {
+        if ($user->hasVerifiedEmail()) {
+            return $user->is_active ? 'active' : 'inactive';
+        }
+
+        return $user->invitation_expires_at?->isPast() ? 'expired' : 'pending';
     }
 }

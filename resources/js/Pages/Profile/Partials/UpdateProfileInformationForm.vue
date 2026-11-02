@@ -3,7 +3,7 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
-import { Link, useForm, usePage } from '@inertiajs/vue3';
+import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 
 defineProps({
     mustVerifyEmail: {
@@ -12,6 +12,9 @@ defineProps({
     status: {
         type: String,
     },
+    pendingEmail: String,
+    pendingEmailExpiresAt: String,
+    mustChangeEmail: Boolean,
 });
 
 const user = usePage().props.auth.user;
@@ -19,27 +22,33 @@ const user = usePage().props.auth.user;
 const form = useForm({
     name: user.name,
     email: user.email,
+    current_password: '',
+});
+
+const submit = () => form.patch(route('profile.update'), {
+    preserveScroll: true,
+    onSuccess: () => form.reset('current_password'),
 });
 </script>
 
 <template>
-    <section>
+    <section class="profile-form">
         <header>
             <h2 class="text-lg font-medium text-gray-900">
-                Profile Information
+                Informasi Profil
             </h2>
 
-            <p class="mt-1 text-sm text-gray-600">
-                Update your account's profile information and email address.
+            <p>
+                Perbarui nama dan email login akun. Email baru akan digunakan setelah diverifikasi.
             </p>
         </header>
 
         <form
-            @submit.prevent="form.patch(route('profile.update'))"
+            @submit.prevent="submit"
             class="mt-6 space-y-6"
         >
             <div>
-                <InputLabel for="name" value="Name" />
+                <InputLabel for="name" value="Nama lengkap" />
 
                 <TextInput
                     id="name"
@@ -55,7 +64,7 @@ const form = useForm({
             </div>
 
             <div>
-                <InputLabel for="email" value="Email" />
+                <InputLabel for="email" value="Email login" />
 
                 <TextInput
                     id="email"
@@ -67,31 +76,54 @@ const form = useForm({
                 />
 
                 <InputError class="mt-2" :message="form.errors.email" />
+                <p class="helper">Email login saat ini: {{ user.email }}.</p>
             </div>
 
-            <div v-if="mustVerifyEmail && user.email_verified_at === null">
-                <p class="mt-2 text-sm text-gray-800">
-                    Your email address is unverified.
+            <div v-if="form.email.toLowerCase() !== user.email.toLowerCase()">
+                <InputLabel for="current_password" value="Password saat ini" />
+                <TextInput id="current_password" v-model="form.current_password" type="password" class="mt-1 block w-full" required autocomplete="current-password" />
+                <p class="helper">Diperlukan untuk mengamankan perubahan alamat email.</p>
+                <InputError class="mt-2" :message="form.errors.current_password" />
+            </div>
+
+            <div v-if="mustChangeEmail" class="status-panel warning">
+                <strong>Lengkapi keamanan akun.</strong>
+                Akun ini masih menggunakan email awal deployment. Ganti dengan email operasional yang dapat diakses.
+            </div>
+
+            <div v-if="pendingEmail" class="status-panel">
+                <strong>Email baru menunggu verifikasi:</strong> {{ pendingEmail }}
+                <p class="mt-1">Email lama tetap digunakan untuk login sampai tautan verifikasi dibuka.</p>
+                <div class="status-actions">
+                    <button type="button" @click="router.post(route('profile.email.resend'))">Kirim ulang tautan</button>
+                    <button type="button" @click="router.delete(route('profile.email.cancel'))">Batalkan perubahan</button>
+                </div>
+            </div>
+
+            <div v-if="mustVerifyEmail && user.email_verified_at === null && !pendingEmail" class="status-panel warning">
+                <p>
+                    Alamat email Anda belum diverifikasi.
+                </p>
+                <div class="status-actions">
                     <Link
                         :href="route('verification.send')"
                         method="post"
                         as="button"
-                        class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                     >
-                        Click here to re-send the verification email.
+                        Kirim ulang email verifikasi
                     </Link>
-                </p>
+                </div>
 
                 <div
                     v-show="status === 'verification-link-sent'"
-                    class="mt-2 text-sm font-medium text-green-600"
+                    class="helper"
                 >
-                    A new verification link has been sent to your email address.
+                    Tautan verifikasi baru telah dikirim.
                 </div>
             </div>
 
             <div class="flex items-center gap-4">
-                <PrimaryButton :disabled="form.processing">Save</PrimaryButton>
+                <PrimaryButton :disabled="form.processing">Simpan Profil</PrimaryButton>
 
                 <Transition
                     enter-active-class="transition ease-in-out"
@@ -103,7 +135,7 @@ const form = useForm({
                         v-if="form.recentlySuccessful"
                         class="text-sm text-gray-600"
                     >
-                        Saved.
+                        Tersimpan.
                     </p>
                 </Transition>
             </div>

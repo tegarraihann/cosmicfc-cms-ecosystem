@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\AcceptInvitationController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -8,9 +9,14 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\Auth\VerifyPendingEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
+    Route::get('activate-account/{user}/{token}', [AcceptInvitationController::class, 'create'])
+        ->middleware(['signed', 'throttle:6,1'])->name('invitation.accept');
+    Route::post('activate-account/{user}/{token}', [AcceptInvitationController::class, 'store'])
+        ->middleware(['signed', 'throttle:6,1'])->name('invitation.store');
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
@@ -28,6 +34,10 @@ Route::middleware('guest')->group(function () {
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
 });
+
+Route::get('verify-new-email/{user}/{token}', VerifyPendingEmailController::class)
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('email-change.verify');
 
 Route::middleware('auth')->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)

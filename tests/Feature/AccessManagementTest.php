@@ -6,8 +6,10 @@ use App\Enums\UserRole;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Notifications\UserInvitationNotification;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -29,20 +31,21 @@ class AccessManagementTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Admin/AccessManagement')
-                ->has('users', 2)
+                ->has('users', 1)
                 ->has('roles', 3)
                 ->has('permissions'));
     }
 
     public function test_regular_admin_cannot_open_access_management(): void
     {
-        $user = User::where('role', UserRole::Admin)->firstOrFail();
+        $user = User::factory()->admin()->create();
 
         $this->actingAs($user)->get(route('admin.access.index'))->assertForbidden();
     }
 
     public function test_superadmin_can_create_a_role_and_user(): void
     {
+        Notification::fake();
         $superAdmin = User::where('role', UserRole::SuperAdmin)->firstOrFail();
 
         $this->actingAs($superAdmin)->post(route('admin.access.roles.store'), [
@@ -62,6 +65,10 @@ class AccessManagementTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('users', ['email' => 'editor@cosmic.test', 'role_id' => $role->id]);
+        $created = User::where('email', 'editor@cosmic.test')->firstOrFail();
+        $this->assertNull($created->email_verified_at);
+        $this->assertNotNull($created->invitation_token);
+        Notification::assertSentTo($created, UserInvitationNotification::class);
     }
 
     public function test_superadmin_cannot_delete_own_account(): void
@@ -74,6 +81,7 @@ class AccessManagementTest extends TestCase
 
     public function test_account_active_checkbox_value_is_saved_and_inactive_user_cannot_login(): void
     {
+        Notification::fake();
         $superAdmin = User::where('role', UserRole::SuperAdmin)->firstOrFail();
         $role = Role::where('slug', 'admin')->firstOrFail();
 
@@ -88,6 +96,7 @@ class AccessManagementTest extends TestCase
 
         $user = User::where('email', 'inactive@cosmic.test')->firstOrFail();
         $this->assertFalse($user->is_active);
+        $user->forceFill(['password' => 'Password123!', 'email_verified_at' => now()])->save();
 
         auth()->logout();
         $this->post(route('login'), [

@@ -66,6 +66,19 @@ function removeUser(user) {
             preserveScroll: true,
         });
 }
+function resendInvitation(user) {
+    router.post(route('admin.access.users.invitation.resend', user.id), {}, {
+        preserveScroll: true,
+    });
+}
+function accountStatus(user) {
+    return {
+        active: 'Aktif & terverifikasi',
+        inactive: 'Nonaktif',
+        pending: 'Menunggu aktivasi',
+        expired: 'Undangan kedaluwarsa',
+    }[user.invitation_status] || 'Status tidak diketahui';
+}
 function openRole(role = null) {
     editingRole.value = role;
     roleForm.clearErrors();
@@ -176,7 +189,7 @@ function removeRole(role) {
                             <tr>
                                 <th>Pengguna</th>
                                 <th>Role</th>
-                                <th>Status</th>
+                                <th>Status akun</th>
                                 <th>Login terakhir</th>
                                 <th></th>
                             </tr>
@@ -194,12 +207,10 @@ function removeRole(role) {
                                     <span
                                         :class="[
                                             'status',
-                                            user.is_active ? 'on' : 'off',
+                                            user.invitation_status === 'active' ? 'on' : 'off',
                                         ]"
                                         >{{
-                                            user.is_active
-                                                ? "Aktif"
-                                                : "Nonaktif"
+                                            accountStatus(user)
                                         }}</span
                                     >
                                 </td>
@@ -208,6 +219,10 @@ function removeRole(role) {
                                 </td>
                                 <td class="actions">
                                     <button @click="openUser(user)">Edit</button
+                                    ><button
+                                        v-if="['pending', 'expired'].includes(user.invitation_status)"
+                                        @click="resendInvitation(user)"
+                                    >Kirim Ulang Undangan</button
                                     ><button
                                         v-if="
                                             user.id !== currentUserId &&
@@ -280,31 +295,36 @@ function removeRole(role) {
                         >Email<input
                             v-model="userForm.email"
                             type="email"
+                            :disabled="Boolean(editingUser)"
                             required
-                        /><small>{{ userForm.errors.email }}</small></label
+                        /><small>{{ userForm.errors.email || (editingUser ? 'Email hanya dapat diubah dan diverifikasi oleh pemilik akun melalui halaman Profil.' : '') }}</small></label
                     ><label
                         >Role<select v-model="userForm.role_id" required>
                             <option value="" disabled>Pilih role</option>
                             <option
-                                v-for="role in roles.filter((r) => r.is_active)"
+                                v-for="role in roles.filter((r) => r.is_active && (editingUser || r.slug !== 'superadmin'))"
                                 :key="role.id"
                                 :value="role.id"
                             >
                                 {{ role.name }}
                             </option></select
                         ><small>{{ userForm.errors.role_id }}</small></label
-                    ><label
+                    ><label v-if="editingUser"
                         >Password <em>{{ editingUser ? "(opsional)" : "" }}</em
                         ><input
                             v-model="userForm.password"
                             type="password"
-                            :required="!editingUser"
+                            :required="false"
                         /><small>{{ userForm.errors.password }}</small></label
-                    ><label
+                    ><label v-if="editingUser"
                         >Konfirmasi Password<input
                             v-model="userForm.password_confirmation"
                             type="password"
-                            :required="!editingUser" /></label
+                            :required="false" /></label
+                    ><div v-if="!editingUser" class="invitation-info">
+                        <b>Aktivasi melalui email</b>
+                        <small>Pengguna akan menerima undangan untuk memverifikasi email dan menentukan password sendiri. Tautan berlaku selama 24 jam.</small>
+                    </div
                     ><label class="check account-active"
                         ><input v-model="userForm.is_active" type="checkbox" />
                         <span class="checkbox-mark" aria-hidden="true">✓</span
@@ -321,7 +341,7 @@ function removeRole(role) {
                     <button type="button" @click="userEditor = false">
                         Batal</button
                     ><button class="primary" :disabled="userForm.processing">
-                        Simpan Pengguna
+                        {{ editingUser ? 'Simpan Perubahan' : 'Kirim Undangan' }}
                     </button>
                 </footer>
             </form>

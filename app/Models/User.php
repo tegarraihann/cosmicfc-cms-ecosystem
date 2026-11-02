@@ -3,15 +3,15 @@
 namespace App\Models;
 
 use App\Enums\UserRole;
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
@@ -24,7 +24,14 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'pending_email',
         'email_verified_at',
+        'email_change_token',
+        'email_change_expires_at',
+        'must_change_email',
+        'invitation_token',
+        'invitation_expires_at',
+        'invited_at',
         'role',
         'role_id',
         'is_active',
@@ -40,6 +47,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'email_change_token',
+        'invitation_token',
     ];
 
     /**
@@ -51,6 +60,10 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'email_change_expires_at' => 'datetime',
+            'must_change_email' => 'boolean',
+            'invitation_expires_at' => 'datetime',
+            'invited_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
             'is_active' => 'boolean',
