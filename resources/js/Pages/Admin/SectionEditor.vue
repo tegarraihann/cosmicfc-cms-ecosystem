@@ -1,11 +1,13 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
+import MediaGalleryPicker from "@/Components/Admin/MediaGalleryPicker.vue";
 import MediaPicker from "@/Components/Admin/MediaPicker.vue";
 import { Head, Link, useForm, usePage } from "@inertiajs/vue3";
 import { computed, ref } from "vue";
 const props = defineProps({
     section: Object,
     fields: Object,
+    sources: { type: Array, default: () => [] },
     content: Object,
     publishedContent: Object,
 });
@@ -48,9 +50,9 @@ const visibleFieldCount = computed(
             </div>
             <header class="editor-hero">
                 <div>
-                    <span>Section Content</span>
+                    <span>Konten Halaman</span>
                     <h1>{{ section.label }}<b>.</b></h1>
-                    <p>{{ section.page.label }} · {{ section.component }}</p>
+                    <p>{{ section.page.label }} · Atur informasi yang dapat diedit pada section ini</p>
                 </div>
                 <div class="hero-actions">
                     <Link
@@ -68,7 +70,7 @@ const visibleFieldCount = computed(
                     <main class="form-panel">
                         <header>
                             <div>
-                                <span>Content Fields</span>
+                                <span>Konten Section</span>
                                 <h2>Edit Konten</h2>
                             </div>
                             <small
@@ -85,28 +87,24 @@ const visibleFieldCount = computed(
                                     {
                                         full: [
                                             'textarea',
-                                            'json',
+                                            'gallery',
                                             'image',
                                             'video',
                                             'boolean',
                                         ].includes(field.type),
                                     },
                                 ]"
-                                ><span
-                                    >{{ field.label }}<i>{{ key }}</i></span
-                                >
+                                ><span>{{ field.label }}</span>
                                 <textarea
                                     v-if="field.type === 'textarea'"
                                     v-model="form.content[key]"
                                     rows="5"
                                     :maxlength="field.max"
                                 />
-                                <textarea
-                                    v-else-if="field.type === 'json'"
+                                <MediaGalleryPicker
+                                    v-else-if="field.type === 'gallery'"
                                     v-model="form.content[key]"
-                                    class="json"
-                                    rows="10"
-                                    spellcheck="false"
+                                    :max="field.max || 6"
                                 />
                                 <div
                                     v-else-if="field.type === 'image'"
@@ -181,10 +179,21 @@ const visibleFieldCount = computed(
                         <div v-if="form.errors.content" class="form-error">
                             {{ form.errors.content }}
                         </div>
+                        <section v-if="sources.length" class="data-sources">
+                            <header>
+                                <span>Sumber Data Otomatis</span>
+                                <h2>Data dikelola dari modul utama</h2>
+                                <p>Informasi berikut tidak perlu diketik ulang di editor section.</p>
+                            </header>
+                            <article v-for="source in sources" :key="`${source.route}-${source.label}`">
+                                <div><strong>{{ source.label }}</strong><small>{{ source.description }}</small></div>
+                                <Link :href="route(source.route)">Kelola Data →</Link>
+                            </article>
+                        </section>
                     </main>
                     <aside class="side-panel">
                         <section>
-                            <span>Draft Status</span>
+                            <span>Status Perubahan</span>
                             <h3>Belum Dipublikasikan</h3>
                             <p>
                                 Simpan perubahan sebagai draft, lalu gunakan
@@ -193,17 +202,9 @@ const visibleFieldCount = computed(
                             </p>
                         </section>
                         <section>
-                            <span>Komponen</span>
-                            <dl>
-                                <div>
-                                    <dt>Section Key</dt>
-                                    <dd>{{ section.key }}</dd>
-                                </div>
-                                <div>
-                                    <dt>Vue Component</dt>
-                                    <dd>{{ section.component }}</dd>
-                                </div>
-                            </dl>
+                            <span>Cara Pengelolaan</span>
+                            <h3>Konten &amp; data terpisah</h3>
+                            <p>Gunakan halaman ini untuk teks dan visual. Data pertandingan, pemain, klasemen, serta sponsor dikelola melalui modul utama.</p>
                         </section>
                         <section v-if="uploadError" class="upload-error">
                             {{ uploadError }}
@@ -301,9 +302,63 @@ const visibleFieldCount = computed(
     margin-top: 14px;
 }
 .form-panel,
-.side-panel section {
+.side-panel section,
+.data-sources {
     border: 1px solid #afdaff20;
     background: #07111e;
+}
+.data-sources {
+    margin: 0 22px 22px;
+    padding: 18px;
+}
+.data-sources header {
+    margin-bottom: 12px;
+}
+.data-sources header span {
+    color: var(--color-accent);
+    font: 800 0.55rem var(--font-display);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+.data-sources h2 {
+    margin: 6px 0;
+    font: 800 1rem var(--font-display);
+    text-transform: uppercase;
+}
+.data-sources header p {
+    margin: 0;
+    color: #71838f;
+    font-size: 0.62rem;
+}
+.data-sources article {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 13px 0;
+    border-top: 1px solid #ffffff14;
+}
+.data-sources strong,
+.data-sources small {
+    display: block;
+}
+.data-sources strong {
+    font: 750 0.62rem var(--font-display);
+    text-transform: uppercase;
+}
+.data-sources small {
+    margin-top: 4px;
+    color: #71838f;
+    font-size: 0.58rem;
+}
+.data-sources a {
+    flex: 0 0 auto;
+    padding: 9px 11px;
+    border: 1px solid #45b7ff55;
+    color: #9ad8ff;
+    font: 750 0.52rem var(--font-display);
+    text-decoration: none;
+    text-transform: uppercase;
 }
 .form-panel > header {
     display: flex;
@@ -372,10 +427,6 @@ const visibleFieldCount = computed(
 .field textarea {
     resize: vertical;
     line-height: 1.6;
-}
-.field textarea.json {
-    color: #b9dcf2;
-    font: 500 0.68rem/1.55 Consolas;
 }
 .field > small {
     display: block;
@@ -567,6 +618,13 @@ const visibleFieldCount = computed(
     .fields {
         grid-template-columns: 1fr;
         padding: 17px;
+    }
+    .data-sources {
+        margin: 0 17px 17px;
+    }
+    .data-sources article {
+        align-items: flex-start;
+        flex-direction: column;
     }
     .field.full {
         grid-column: auto;

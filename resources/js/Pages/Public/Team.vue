@@ -145,20 +145,20 @@ const dynamicSquadStats = computed(() => [
             </PageHeroSection>
             <SquadDirectorySection
                 v-else-if="section.key === 'team.directory'"
-                v-bind="{ players: playerData.players || [], ...section.content }"
+                v-bind="{ ...section.content, players: playerData.players || [] }"
                 @view-profile="selectedPlayer = $event"
             />
             <PlayerOfMonthSection
                 v-else-if="section.key === 'team.player_month'"
                 v-bind="{
-                    player: playerData.playerOfMonth,
                     ...section.content,
+                    player: playerData.playerOfMonth,
                 }"
                 @view-profile="selectedPlayer = $event"
             />
             <CaptainSpotlightSection
                 v-else-if="section.key === 'team.captain'"
-                v-bind="{ captain: playerData.captain, ...section.content }"
+                v-bind="{ ...section.content, captain: playerData.captain }"
             />
             <CoachingStaffSection
                 v-else-if="section.key === 'team.staff'"
@@ -170,11 +170,11 @@ const dynamicSquadStats = computed(() => [
             />
             <SquadStatisticsSection
                 v-else-if="section.key === 'team.statistics'"
-                v-bind="{ stats: dynamicSquadStats, ...section.content }"
+                v-bind="{ ...section.content, stats: dynamicSquadStats }"
             />
             <PositionCompositionSection
                 v-else-if="section.key === 'team.composition'"
-                v-bind="{ positions: playerData.positions || [], ...section.content }"
+                v-bind="{ ...section.content, positions: playerData.positions || [] }"
             />
         </template>
         <SiteFooter />

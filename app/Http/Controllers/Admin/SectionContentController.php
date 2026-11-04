@@ -10,7 +10,6 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
-use JsonException;
 
 class SectionContentController extends Controller
 {
@@ -19,15 +18,13 @@ class SectionContentController extends Controller
         $section->load('layout', 'draftContent', 'publishedContent');
         $schema = config('section-fields')[$section->section_key]['fields'] ?? [];
         $content = $section->draftContent?->content ?? [];
-        foreach ($schema as $key => $field) {
-            if (($field['type'] ?? null) === 'json' && array_key_exists($key, $content)) {
-                $content[$key] = json_encode($content[$key], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-            }
-        }
 
         return Inertia::render('Admin/SectionEditor', [
             'section' => ['id' => $section->id, 'key' => $section->section_key, 'label' => $section->label, 'component' => $section->component, 'page' => $section->layout->only('page_key', 'label', 'path')],
-            'fields' => $schema, 'content' => $content, 'publishedContent' => $section->publishedContent?->content ?? [],
+            'fields' => $schema,
+            'sources' => config('section-fields')[$section->section_key]['sources'] ?? [],
+            'content' => $content,
+            'publishedContent' => $section->publishedContent?->content ?? [],
         ]);
     }
 
@@ -50,15 +47,8 @@ class SectionContentController extends Controller
             if ($value === null || $value === '') {
                 continue;
             }
-            if ($type === 'json') {
-                try {
-                    $value = is_string($value) ? json_decode($value, true, 512, JSON_THROW_ON_ERROR) : $value;
-                } catch (JsonException) {
-                    throw ValidationException::withMessages(["content.{$key}" => 'Format JSON tidak valid.']);
-                }
-                if (! is_array($value)) {
-                    throw ValidationException::withMessages(["content.{$key}" => 'Data harus berupa object atau array JSON.']);
-                }
+            if ($type === 'gallery') {
+                $value = $this->validateGallery($key, $value, $field);
             } elseif ($type === 'number') {
                 if (! is_numeric($value)) {
                     throw ValidationException::withMessages(["content.{$key}" => 'Nilai harus berupa angka.']);
@@ -86,10 +76,33 @@ class SectionContentController extends Controller
         $draft->fill(['content' => $content, 'version' => ($draft->version ?: 0) + 1, 'created_by' => $request->user()->id])->save();
         $section->layout()->update(['has_unpublished_changes' => true]);
         $section->layout->audits()->create(['user_id' => $request->user()->id, 'action' => 'section_content_saved', 'after_payload' => ['section' => $section->section_key, 'content' => $content]]);
-        $mediaFields = collect($schema)->filter(fn ($field) => in_array($field['type'] ?? null, ['image', 'video'], true))->mapWithKeys(fn ($field, $key) => [$key => $content[$key] ?? null])->all();
+        $mediaFields = collect($schema)->filter(fn ($field) => in_array($field['type'] ?? null, ['image', 'video', 'gallery'], true))->mapWithKeys(fn ($field, $key) => [$key => $content[$key] ?? null])->all();
         $mediaLibrary->syncUsages($section, $mediaFields);
 
         return back()->with('success', 'Konten section berhasil disimpan sebagai draft.');
+    }
+
+    private function validateGallery(string $key, mixed $value, array $field): array
+    {
+        if (! is_array($value) || count($value) > ($field['max'] ?? 6)) {
+            throw ValidationException::withMessages(["content.{$key}" => 'Galeri harus berupa daftar dengan maksimal '.($field['max'] ?? 6).' gambar.']);
+        }
+
+        return collect($value)->values()->map(function ($item, $index) use ($key) {
+            if (! is_array($item) || blank($item['src'] ?? null) || ! is_string($item['src'])) {
+                throw ValidationException::withMessages(["content.{$key}.{$index}.src" => 'Setiap item galeri wajib memiliki gambar.']);
+            }
+
+            if (! preg_match('/^(https?:\/\/|\/)/', $item['src'])) {
+                throw ValidationException::withMessages(["content.{$key}.{$index}.src" => 'Gunakan gambar dari Media Library atau URL yang valid.']);
+            }
+
+            return [
+                'src' => mb_substr($item['src'], 0, 500),
+                'alt' => mb_substr((string) ($item['alt'] ?? ''), 0, 255),
+                'focalPoint' => in_array($item['focalPoint'] ?? 'center', ['left center', 'center', 'right center'], true) ? $item['focalPoint'] : 'center',
+            ];
+        })->all();
     }
 
     private function validateStoryVideo(array $content): void

@@ -203,7 +203,7 @@ const competitionRules = computed(() =>
             />
             <TopPlayersSection
                 v-else-if="section.key === 'league.top_players'"
-                v-bind="{ players: playerData.topPlayers || [], ...section.content }"
+                v-bind="{ ...section.content, players: playerData.topPlayers || [] }"
             />
             <MatchdayCenterSection
                 v-else-if="section.key === 'league.matchday'"

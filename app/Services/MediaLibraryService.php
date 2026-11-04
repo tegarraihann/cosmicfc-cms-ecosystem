@@ -59,14 +59,20 @@ class MediaLibraryService
     public function syncUsages(Model $consumer, array $fields): void
     {
         MediaUsage::where('usable_type', $consumer->getMorphClass())->where('usable_id', $consumer->getKey())->whereIn('field_key', array_keys($fields))->delete();
-        foreach ($fields as $field => $url) {
-            if (! is_string($url) || ! str_contains($url, '/storage/')) {
-                continue;
-            }
-            $path = ltrim(Str::after($url, '/storage/'), '/');
-            $media = Media::where('directory', dirname($path))->where('filename', basename($path))->first();
-            if ($media) {
-                MediaUsage::firstOrCreate(['media_id' => $media->id, 'usable_type' => $consumer->getMorphClass(), 'usable_id' => $consumer->getKey(), 'field_key' => $field]);
+        foreach ($fields as $field => $value) {
+            $urls = is_array($value)
+                ? collect($value)->map(fn ($item) => is_array($item) ? ($item['src'] ?? null) : $item)->filter()
+                : collect([$value]);
+
+            foreach ($urls as $url) {
+                if (! is_string($url) || ! str_contains($url, '/storage/')) {
+                    continue;
+                }
+                $path = ltrim(Str::after($url, '/storage/'), '/');
+                $media = Media::where('directory', dirname($path))->where('filename', basename($path))->first();
+                if ($media) {
+                    MediaUsage::firstOrCreate(['media_id' => $media->id, 'usable_type' => $consumer->getMorphClass(), 'usable_id' => $consumer->getKey(), 'field_key' => $field]);
+                }
             }
         }
     }

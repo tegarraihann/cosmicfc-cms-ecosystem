@@ -168,7 +168,7 @@ const matchCenter = computed(() => ({
             />
             <SquadSection
                 v-else-if="section.key === 'home.squad'"
-                v-bind="{ players: playerData.featured || [], ...section.content }"
+                v-bind="{ ...section.content, players: playerData.featured || [] }"
             />
             <ClubCultureSection
                 v-else-if="section.key === 'home.club_culture'"
@@ -177,8 +177,8 @@ const matchCenter = computed(() => ({
             <AboutCosmicSection
                 v-else-if="section.key === 'home.about'"
                 v-bind="{
-                    ...aboutProfile,
                     ...section.content,
+                    ...aboutProfile,
                     people: staffData.people,
                     partners:
                         sponsorData.placements?.['home.official_partners'] ||
