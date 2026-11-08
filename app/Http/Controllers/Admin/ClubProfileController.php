@@ -89,7 +89,13 @@ class ClubProfileController extends Controller
             'socials.*.url' => ['nullable', 'string', 'max:500'],
             'socials.*.handle' => ['nullable', 'string', 'max:100'],
             'socials.*.active' => ['boolean'],
-            'seo' => ['array'], 'seo.default_title' => ['nullable', 'string', 'max:70'], 'seo.default_description' => ['nullable', 'string', 'max:170'], 'seo.keywords' => ['nullable', 'string', 'max:500'],
+            'seo' => ['array'], 'seo.default_title' => ['nullable', 'string', 'max:70'], 'seo.default_description' => ['nullable', 'string', 'max:170'], 'seo.keywords' => ['nullable', 'string', 'max:500'], 'seo.indexing_enabled' => ['boolean'],
+            'seo.pages' => ['array'],
+            'seo.pages.home.title' => ['nullable', 'string', 'max:70'], 'seo.pages.home.description' => ['nullable', 'string', 'max:170'],
+            'seo.pages.schedule.title' => ['nullable', 'string', 'max:70'], 'seo.pages.schedule.description' => ['nullable', 'string', 'max:170'],
+            'seo.pages.league.title' => ['nullable', 'string', 'max:70'], 'seo.pages.league.description' => ['nullable', 'string', 'max:170'],
+            'seo.pages.team.title' => ['nullable', 'string', 'max:70'], 'seo.pages.team.description' => ['nullable', 'string', 'max:170'],
+            'seo.pages.news.title' => ['nullable', 'string', 'max:70'], 'seo.pages.news.description' => ['nullable', 'string', 'max:170'],
             'website' => ['array'], 'website.timezone' => ['required', Rule::in(['Asia/Jakarta'])], 'website.locale' => ['required', Rule::in(['id', 'en'])], 'website.maintenance' => ['boolean'], 'website.analytics_id' => ['nullable', 'regex:/^(G-[A-Z0-9]+|)$/'],
         ]);
     }
@@ -103,6 +109,10 @@ class ClubProfileController extends Controller
     {
         $data = $this->payload($profile);
         $data['founded_at'] = $profile->founded_at?->format('Y-m-d');
+        $data['seo'] = array_replace_recursive([
+            'default_title' => '', 'default_description' => '', 'keywords' => '', 'indexing_enabled' => true,
+            'pages' => array_fill_keys(['home', 'schedule', 'league', 'team', 'news'], ['title' => '', 'description' => '']),
+        ], is_array($data['seo'] ?? null) ? $data['seo'] : []);
 
         return $data;
     }

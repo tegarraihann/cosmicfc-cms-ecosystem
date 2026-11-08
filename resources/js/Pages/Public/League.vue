@@ -1,5 +1,4 @@
 <script setup>
-import { Head } from "@inertiajs/vue3";
 import { computed } from "vue";
 import PageHeroSection from "@/Components/Public/PageHeroSection.vue";
 import SiteNavbar from "@/Components/Public/SiteNavbar.vue";
@@ -123,7 +122,6 @@ const competitionRules = computed(() =>
 </script>
 
 <template>
-    <Head title="Liga" />
     <main>
         <div v-if="isPreview" class="preview-banner">
             MODE PREVIEW DRAFT · Perubahan belum dipublikasikan

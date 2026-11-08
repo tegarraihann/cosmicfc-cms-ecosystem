@@ -1,15 +1,10 @@
 <script setup>
 import SiteNavbar from "@/Components/Public/SiteNavbar.vue";
 import SiteFooter from "@/Components/Public/SiteFooter.vue";
-import { Head, Link } from "@inertiajs/vue3";
+import { Link } from "@inertiajs/vue3";
 defineProps({ article: Object, related: Array });
 </script>
 <template>
-    <Head :title="article.seo_title || `${article.title} | COSMIC`"
-        ><meta
-            name="description"
-            :content="article.seo_description || article.excerpt"
-    /></Head>
     <main>
         <SiteNavbar :transparent="false" />
         <article class="article">

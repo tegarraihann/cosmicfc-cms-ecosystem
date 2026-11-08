@@ -1,5 +1,5 @@
 <script setup>
-import { Head, usePage } from "@inertiajs/vue3";
+import { usePage } from "@inertiajs/vue3";
 import { computed, ref } from "vue";
 import PageHeroSection from "@/Components/Public/PageHeroSection.vue";
 import SiteNavbar from "@/Components/Public/SiteNavbar.vue";
@@ -76,7 +76,6 @@ const dynamicSquadStats = computed(() => [
 </script>
 
 <template>
-    <Head title="Tim" />
     <main>
         <div v-if="isPreview" class="preview-banner">
             MODE PREVIEW DRAFT · Perubahan belum dipublikasikan

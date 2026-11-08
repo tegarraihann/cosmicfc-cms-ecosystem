@@ -12,12 +12,26 @@ const props = defineProps({
 const page = usePage(),
     tab = ref("identity"),
     uploadError = ref("");
-const form = useForm(JSON.parse(JSON.stringify(props.profile)));
+const profileData = JSON.parse(JSON.stringify(props.profile));
+profileData.seo ??= {};
+profileData.seo.indexing_enabled ??= true;
+profileData.seo.pages ??= {};
+for (const key of ["home", "schedule", "league", "team", "news"]) {
+    profileData.seo.pages[key] ??= { title: "", description: "" };
+}
+const form = useForm(profileData);
 const tabs = [
     ["identity", "Identitas & Branding"],
     ["location", "Lokasi"],
     ["social", "Media Sosial"],
-    ["seo", "SEO"],
+    ["seo", "SEO & Preview Tautan"],
+];
+const seoPages = [
+    ["home", "Beranda", "Halaman utama website COSMIC."],
+    ["schedule", "Jadwal", "Jadwal, pertandingan live, dan hasil."],
+    ["league", "Liga", "Klasemen dan statistik kompetisi."],
+    ["team", "Tim", "Daftar pemain dan staf COSMIC."],
+    ["news", "News", "Daftar berita dan dokumentasi klub."],
 ];
 const socialPlatforms = [
     ["instagram", "Instagram"],
@@ -318,23 +332,31 @@ function removeSocial(index) {
                         </button>
                     </div>
                     <div v-show="tab === 'seo'" class="fields">
+                        <div class="settings-group-heading full">
+                            <span>SEO Utama &amp; Preview Tautan</span>
+                            <p>
+                                Atur informasi yang dibaca Google dan tampilan
+                                saat tautan website dibagikan ke media sosial.
+                            </p>
+                        </div>
                         <label class="full"
-                            >Judul tab browser<input
+                            >Judul utama website<input
                                 v-model="form.seo.default_title"
                                 maxlength="70"
                             /><small
-                                >Judul halaman Beranda pada tab browser dan
-                                hasil pencarian ·
+                                >Digunakan sebagai judul cadangan pada tab
+                                browser, Google, dan preview tautan ·
                                 {{ form.seo.default_title?.length || 0 }} /
                                 70</small
                             ></label
                         ><label class="full"
-                            >Deskripsi hasil pencarian<textarea
+                            >Deskripsi utama website<textarea
                                 v-model="form.seo.default_description"
                                 rows="4"
                                 maxlength="170"
                             /><small
-                                >Ringkasan Beranda untuk mesin pencari ·
+                                >Digunakan jika halaman belum memiliki
+                                deskripsi khusus ·
                                 {{
                                     form.seo.default_description?.length || 0
                                 }}
@@ -348,6 +370,108 @@ function removeSocial(index) {
                                 pisahkan dengan koma.</small
                             ></label
                         >
+                        <label class="full seo-media-field">
+                            Gambar default preview tautan
+                            <small
+                                >Dipakai saat artikel atau pertandingan belum
+                                memiliki gambar sendiri. Rasio yang disarankan
+                                1200 × 630 piksel.</small
+                            >
+                            <MediaPicker
+                                v-model="form.share_image_url"
+                                folder="general"
+                            />
+                        </label>
+                        <label class="check full seo-indexing">
+                            <input
+                                v-model="form.seo.indexing_enabled"
+                                type="checkbox"
+                            />
+                            <span>
+                                <b>Izinkan website tampil di mesin pencari</b>
+                                <small
+                                    >Nonaktifkan hanya saat website belum siap
+                                    dipublikasikan.</small
+                                >
+                            </span>
+                        </label>
+                        <div class="seo-preview search-preview">
+                            <span>Preview hasil pencarian</span>
+                            <strong>{{
+                                form.seo.default_title || "Judul website"
+                            }}</strong>
+                            <small>{{
+                                form.seo.default_description ||
+                                "Deskripsi website akan tampil di sini."
+                            }}</small>
+                        </div>
+                        <div class="seo-preview share-preview">
+                            <span>Preview saat tautan dibagikan</span>
+                            <img
+                                v-if="form.share_image_url"
+                                :src="form.share_image_url"
+                                alt="Preview gambar tautan"
+                            />
+                            <div v-else class="share-placeholder">
+                                Gambar preview belum dipilih
+                            </div>
+                            <strong>{{
+                                form.seo.default_title || "Judul website"
+                            }}</strong>
+                            <small>{{
+                                form.seo.default_description ||
+                                "Deskripsi website akan tampil di sini."
+                            }}</small>
+                        </div>
+                        <div class="settings-group-heading full separated">
+                            <span>SEO Per Halaman</span>
+                            <p>
+                                Beri judul dan deskripsi yang lebih spesifik
+                                agar setiap halaman mudah dikenali oleh pengguna
+                                dan mesin pencari.
+                            </p>
+                        </div>
+                        <article
+                            v-for="seoPage in seoPages"
+                            :key="seoPage[0]"
+                            class="seo-page-card full"
+                        >
+                            <header>
+                                <strong>{{ seoPage[1] }}</strong>
+                                <small>{{ seoPage[2] }}</small>
+                            </header>
+                            <label>
+                                Judul halaman
+                                <input
+                                    v-model="form.seo.pages[seoPage[0]].title"
+                                    maxlength="70"
+                                />
+                                <small
+                                    >{{
+                                        form.seo.pages[seoPage[0]].title
+                                            ?.length || 0
+                                    }}
+                                    / 70 karakter</small
+                                >
+                            </label>
+                            <label>
+                                Deskripsi halaman
+                                <textarea
+                                    v-model="
+                                        form.seo.pages[seoPage[0]].description
+                                    "
+                                    rows="3"
+                                    maxlength="170"
+                                />
+                                <small
+                                    >{{
+                                        form.seo.pages[seoPage[0]].description
+                                            ?.length || 0
+                                    }}
+                                    / 170 karakter</small
+                                >
+                            </label>
+                        </article>
                     </div>
                 </main>
                 <footer class="savebar">
@@ -575,6 +699,95 @@ function removeSocial(index) {
     color: #627583;
     font: 500 0.52rem Arial;
     text-transform: none;
+}
+.seo-media-field > small {
+    margin-bottom: 10px;
+}
+.seo-indexing {
+    box-sizing: border-box;
+    padding: 15px;
+    border: 1px solid #45b7ff35;
+    background: #45b7ff0a;
+}
+.seo-indexing span b,
+.seo-indexing span small {
+    display: block;
+}
+.seo-indexing span b {
+    color: #dce8f0;
+    font: 750 0.6rem var(--font-display);
+}
+.seo-preview {
+    min-width: 0;
+    padding: 17px;
+    border: 1px solid #ffffff17;
+    background: #050c14;
+}
+.seo-preview > span {
+    display: block;
+    margin-bottom: 12px;
+    color: #718493;
+    font: 750 0.55rem var(--font-display);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.seo-preview strong,
+.seo-preview small {
+    display: block;
+    overflow-wrap: anywhere;
+}
+.search-preview strong {
+    color: #8ab4f8;
+    font: 500 1.02rem Arial;
+}
+.search-preview small,
+.share-preview small {
+    margin-top: 7px;
+    color: #9aa7b1;
+    font: 500 0.66rem/1.5 Arial;
+}
+.share-preview img,
+.share-placeholder {
+    width: 100%;
+    aspect-ratio: 1.91 / 1;
+    margin-bottom: 12px;
+    object-fit: cover;
+    background: #0a1825;
+}
+.share-placeholder {
+    display: grid;
+    place-items: center;
+    color: #627583;
+    font: 650 0.58rem Arial;
+}
+.share-preview strong {
+    color: #eef5fa;
+    font: 700 0.78rem Arial;
+}
+.seo-page-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding: 18px;
+    border: 1px solid #ffffff17;
+    background: #050c14;
+}
+.seo-page-card > header {
+    grid-column: 1/-1;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #ffffff12;
+}
+.seo-page-card > header strong,
+.seo-page-card > header small {
+    display: block;
+}
+.seo-page-card > header strong {
+    color: #eaf5ff;
+    font: 800 0.7rem var(--font-display);
+    text-transform: uppercase;
+}
+.seo-page-card > header small {
+    margin-top: 5px;
 }
 .media-input {
     display: grid;
@@ -901,6 +1114,12 @@ function removeSocial(index) {
     }
     .fields label.full {
         grid-column: auto;
+    }
+    .seo-preview,
+    .seo-page-card,
+    .seo-page-card > header,
+    .seo-page-card label {
+        grid-column: 1/-1;
     }
     .media-input {
         grid-template-columns: 1fr;

@@ -1,7 +1,7 @@
 <script setup>
 import SiteNavbar from "@/Components/Public/SiteNavbar.vue";
 import SiteFooter from "@/Components/Public/SiteFooter.vue";
-import { Head, Link, router } from "@inertiajs/vue3";
+import { Link, router } from "@inertiajs/vue3";
 import { ref } from "vue";
 const p = defineProps({
     articles: Object,
@@ -20,11 +20,6 @@ const apply = () =>
     });
 </script>
 <template>
-    <Head title="News | COSMIC"
-        ><meta
-            name="description"
-            content="Berita, laporan pertandingan, dan cerita terbaru COSMIC."
-    /></Head>
     <main>
         <section class="hero">
             <SiteNavbar />

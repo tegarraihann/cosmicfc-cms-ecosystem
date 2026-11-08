@@ -1,5 +1,4 @@
 <script setup>
-import { Head } from "@inertiajs/vue3";
 import { computed } from "vue";
 import PageHeroSection from "@/Components/Public/PageHeroSection.vue";
 import SiteNavbar from "@/Components/Public/SiteNavbar.vue";
@@ -82,7 +81,6 @@ const resultProps = computed(() => {
 </script>
 
 <template>
-    <Head title="Jadwal Pertandingan" />
     <main>
         <div v-if="isPreview" class="preview-banner">
             MODE PREVIEW DRAFT · Perubahan belum dipublikasikan

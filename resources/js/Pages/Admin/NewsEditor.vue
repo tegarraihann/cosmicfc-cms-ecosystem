@@ -263,6 +263,7 @@ const save = () =>
                                 kosong.</small
                             ><input
                                 v-model="form.seo_title"
+                                maxlength="70"
                                 placeholder="Judul untuk mesin pencari" /></label
                         ><label
                             ><b>Deskripsi SEO</b
@@ -272,8 +273,28 @@ const save = () =>
                             ><textarea
                                 v-model="form.seo_description"
                                 rows="3"
+                                maxlength="170"
                             ></textarea>
                         </label>
+                        <div class="seo-article-preview full">
+                            <span>Preview saat berita dibagikan</span>
+                            <img
+                                v-if="cover"
+                                :src="cover.url"
+                                :alt="cover.title || 'Cover berita'"
+                            />
+                            <div v-else class="seo-preview-placeholder">
+                                Pilih cover berita untuk melengkapi preview
+                            </div>
+                            <strong>{{
+                                form.seo_title || form.title || "Judul berita"
+                            }}</strong>
+                            <small>{{
+                                form.seo_description ||
+                                form.excerpt ||
+                                "Ringkasan berita akan tampil di sini."
+                            }}</small>
+                        </div>
                     </div>
                 </section>
                 <footer class="actions">
@@ -414,6 +435,51 @@ section header p {
     width: 100%;
     height: 160px;
     object-fit: cover;
+}
+.seo-article-preview {
+    overflow: hidden;
+    border: 1px solid #45b7ff30;
+    background: #050c14;
+}
+.seo-article-preview > span,
+.seo-article-preview strong,
+.seo-article-preview small {
+    display: block;
+    margin: 0;
+    padding-inline: 16px;
+}
+.seo-article-preview > span {
+    padding-block: 13px;
+    color: #8acfff;
+    font: 750 0.56rem var(--font-display);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+.seo-article-preview img,
+.seo-preview-placeholder {
+    width: 100%;
+    aspect-ratio: 1.91/1;
+    object-fit: cover;
+    background: #0a1825;
+}
+.seo-preview-placeholder {
+    display: grid;
+    place-items: center;
+    color: #657783;
+    font-size: 0.68rem;
+}
+.seo-article-preview strong {
+    padding-top: 15px;
+    color: #eef5fa;
+    font-size: 0.86rem;
+    overflow-wrap: anywhere;
+}
+.seo-article-preview small {
+    min-height: 0 !important;
+    padding-top: 7px;
+    padding-bottom: 16px;
+    color: #8193a0;
+    line-height: 1.5;
 }
 .gallery {
     display: grid;

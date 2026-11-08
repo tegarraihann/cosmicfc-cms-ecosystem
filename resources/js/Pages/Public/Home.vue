@@ -1,5 +1,5 @@
 <script setup>
-import { Head, usePage } from "@inertiajs/vue3";
+import { usePage } from "@inertiajs/vue3";
 import { computed } from "vue";
 import HeroSection from "@/Components/Public/HeroSection.vue";
 import NextMatchSection from "@/Components/Public/NextMatchSection.vue";
@@ -121,26 +121,6 @@ const matchCenter = computed(() => ({
 </script>
 
 <template>
-    <Head :title="site.seo?.default_title || 'Beranda'">
-        <meta
-            v-if="site.seo?.default_description"
-            head-key="description"
-            name="description"
-            :content="site.seo.default_description"
-        />
-        <meta
-            v-if="site.seo?.keywords"
-            head-key="keywords"
-            name="keywords"
-            :content="site.seo.keywords"
-        />
-        <link
-            v-if="site.branding?.favicon"
-            head-key="favicon"
-            rel="icon"
-            :href="site.branding.favicon"
-        />
-    </Head>
     <main>
         <div v-if="isPreview" class="preview-banner">
             MODE PREVIEW DRAFT · Perubahan belum dipublikasikan

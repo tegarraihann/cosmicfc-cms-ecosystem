@@ -1,5 +1,5 @@
 <script setup>
-import { Head, Link } from "@inertiajs/vue3";
+import { Link } from "@inertiajs/vue3";
 import { computed, ref } from "vue";
 import SiteNavbar from "@/Components/Public/SiteNavbar.vue";
 import SiteFooter from "@/Components/Public/SiteFooter.vue";
@@ -46,7 +46,6 @@ const pageRoot = ref(null);
 </script>
 
 <template>
-    <Head :title="`${match.home.name} vs ${match.away.name}`" />
     <main
         ref="pageRoot"
         class="detail-page"

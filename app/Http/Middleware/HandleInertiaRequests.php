@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Services\ClubProfileService;
+use App\Services\SeoMetadataService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -54,6 +55,7 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
             ],
             'site' => $request->routeIs('preview.profile') ? $profileService->draft() : $profileService->published(),
+            'seoMeta' => app(SeoMetadataService::class)->forRequest($request),
         ];
     }
 }
