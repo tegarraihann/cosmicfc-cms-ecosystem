@@ -45,6 +45,16 @@
         @routes
         @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])
         @inertiaHead
+        @php($measurementId = $page['props']['site']['website']['analytics_id'] ?? null)
+        @if ($measurementId && ! request()->is('admin/*') && ! request()->is('dashboard') && ! request()->is('profile'))
+            <script async src="https://www.googletagmanager.com/gtag/js?id={{ rawurlencode($measurementId) }}"></script>
+            <script>
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', @json($measurementId), { anonymize_ip: true });
+            </script>
+        @endif
     </head>
     <body class="font-sans antialiased">
         @inertia

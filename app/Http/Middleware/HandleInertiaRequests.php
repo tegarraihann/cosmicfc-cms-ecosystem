@@ -2,9 +2,11 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\AnalyticsSetting;
 use App\Services\ClubProfileService;
 use App\Services\SeoMetadataService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -34,6 +36,12 @@ class HandleInertiaRequests extends Middleware
         $user = $request->user()?->loadMissing('roleRelation.permissions');
         $profileService = app(ClubProfileService::class);
 
+        $site = $request->routeIs('preview.profile') ? $profileService->draft() : $profileService->published();
+        if (Schema::hasTable('analytics_settings')) {
+            $analytics = AnalyticsSetting::query()->first();
+            $site['website']['analytics_id'] = $analytics?->enabled ? $analytics->measurement_id : null;
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -54,7 +62,7 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
             ],
-            'site' => $request->routeIs('preview.profile') ? $profileService->draft() : $profileService->published(),
+            'site' => $site,
             'seoMeta' => app(SeoMetadataService::class)->forRequest($request),
         ];
     }

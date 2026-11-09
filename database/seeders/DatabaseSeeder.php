@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
     {
         $groups = [
             'Dashboard' => ['dashboard.view' => 'Lihat Dashboard'],
+            'Statistik Pengunjung' => ['analytics.view' => 'Lihat Statistik Pengunjung', 'analytics.refresh' => 'Perbarui Statistik GA4', 'analytics.configure' => 'Konfigurasi Google Analytics 4'],
             'Pengguna' => ['users.view' => 'Lihat Pengguna', 'users.create' => 'Tambah Pengguna', 'users.update' => 'Ubah Pengguna', 'users.disable' => 'Nonaktifkan Pengguna'],
             'Role' => ['roles.view' => 'Lihat Role', 'roles.create' => 'Tambah Role', 'roles.update' => 'Ubah Role', 'roles.delete' => 'Hapus Role'],
             'Landing Page' => ['landing.view' => 'Lihat Landing Page', 'landing.update' => 'Ubah Landing Page', 'landing.preview' => 'Preview Landing Page', 'landing.publish' => 'Publikasikan Landing Page'],
@@ -50,7 +51,7 @@ class DatabaseSeeder extends Seeder
 
         $superadmin->permissions()->sync(Permission::pluck('id'));
         $admin->permissions()->sync(Permission::whereNotIn('group', ['Pengguna', 'Role'])
-            ->whereNotIn('slug', ['landing.publish', 'club-profile.publish', 'media.restore', 'players.delete', 'staff.delete', 'clubs.delete', 'competitions.delete', 'competitions.publish', 'matches.correct', 'matches.delete', 'match-events.correct', 'standings.approve', 'player-awards.correct', 'player-awards.types', 'sponsors.publish', 'sponsors.delete'])->pluck('id'));
+            ->whereNotIn('slug', ['analytics.configure', 'landing.publish', 'club-profile.publish', 'media.restore', 'players.delete', 'staff.delete', 'clubs.delete', 'competitions.delete', 'competitions.publish', 'matches.correct', 'matches.delete', 'match-events.correct', 'standings.approve', 'player-awards.correct', 'player-awards.types', 'sponsors.publish', 'sponsors.delete'])->pluck('id'));
         $member->permissions()->sync(Permission::where('slug', 'dashboard.view')->pluck('id'));
 
         $profile = app(ClubProfileService::class)->defaults();

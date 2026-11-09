@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Admin\AccessManagementController;
+use App\Http\Controllers\Admin\AnalyticsController;
+use App\Http\Controllers\Admin\AnalyticsSettingsController;
 use App\Http\Controllers\Admin\ClubController;
 use App\Http\Controllers\Admin\ClubProfileController;
 use App\Http\Controllers\Admin\CompetitionController;
@@ -67,6 +69,14 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin/club-profile')->
     Route::post('/publish', [ClubProfileController::class, 'publish'])->middleware('permission:club-profile.publish')->name('publish');
     Route::post('/discard', [ClubProfileController::class, 'discard'])->middleware('permission:club-profile.update')->name('discard');
     Route::get('/preview', [ClubProfileController::class, 'preview'])->middleware('permission:club-profile.preview')->name('preview');
+});
+
+Route::middleware(['auth', 'verified', 'admin'])->prefix('admin/analytics')->name('admin.analytics.')->group(function () {
+    Route::get('/', [AnalyticsController::class, 'index'])->middleware('permission:analytics.view')->name('index');
+    Route::post('/refresh', [AnalyticsController::class, 'refresh'])->middleware(['permission:analytics.refresh', 'throttle:1,5'])->name('refresh');
+    Route::put('/settings', [AnalyticsSettingsController::class, 'update'])->middleware('permission:analytics.configure')->name('settings.update');
+    Route::post('/settings/test', [AnalyticsSettingsController::class, 'test'])->middleware(['permission:analytics.configure', 'throttle:3,1'])->name('settings.test');
+    Route::delete('/settings/credentials', [AnalyticsSettingsController::class, 'destroyCredentials'])->middleware('permission:analytics.configure')->name('settings.credentials.destroy');
 });
 
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin/players')->name('admin.players.')->group(function () {

@@ -57,6 +57,16 @@ const navigation = computed(() => [
               },
           ]
         : []),
+    ...(can("analytics.view")
+        ? [
+              {
+                  label: "Statistik Pengunjung",
+                  href: route("admin.analytics.index"),
+                  active: route().current("admin.analytics.index"),
+                  icon: "dashboard",
+              },
+          ]
+        : []),
     ...(can("matches.view")
         ? [
               {

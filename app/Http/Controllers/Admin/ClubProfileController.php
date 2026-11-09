@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AnalyticsSetting;
 use App\Models\ClubProfile;
 use App\Models\ClubProfileAudit;
 use App\Services\ClubProfileService;
@@ -28,6 +29,7 @@ class ClubProfileController extends Controller
             'published' => ['version' => $published->version, 'published_at' => $published->published_at?->translatedFormat('d M Y, H:i')],
             'hasChanges' => $this->payload($draft) !== $this->payload($published),
             'canPublish' => request()->user()->hasPermission('club-profile.publish'),
+            'analyticsSetting' => request()->user()->hasPermission('analytics.configure') ? $this->analyticsFormData() : null,
         ]);
     }
 
@@ -115,5 +117,21 @@ class ClubProfileController extends Controller
         ], is_array($data['seo'] ?? null) ? $data['seo'] : []);
 
         return $data;
+    }
+
+    private function analyticsFormData(): array
+    {
+        $setting = AnalyticsSetting::current();
+
+        return [
+            'enabled' => $setting->enabled,
+            'measurement_id' => $setting->measurement_id,
+            'property_id' => $setting->property_id,
+            'cache_minutes' => $setting->cache_minutes,
+            'has_credentials' => filled($setting->service_account),
+            'connection_status' => $setting->connection_status,
+            'last_error' => $setting->last_error,
+            'last_tested_at' => $setting->last_tested_at?->locale('id')->translatedFormat('d M Y, H.i').' WIB',
+        ];
     }
 }

@@ -11,3 +11,7 @@ Artisan::command('inspire', function () {
 Schedule::command('matches:sync-statuses')
     ->everyMinute()
     ->withoutOverlapping();
+
+Schedule::command('analytics:sync')
+    ->everyThirtyMinutes()
+    ->withoutOverlapping();

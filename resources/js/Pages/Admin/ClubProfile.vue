@@ -8,6 +8,7 @@ const props = defineProps({
     published: Object,
     hasChanges: Boolean,
     canPublish: Boolean,
+    analyticsSetting: { type: Object, default: null },
 });
 const page = usePage(),
     tab = ref("identity"),
@@ -20,11 +21,20 @@ for (const key of ["home", "schedule", "league", "team", "news"]) {
     profileData.seo.pages[key] ??= { title: "", description: "" };
 }
 const form = useForm(profileData);
+const analyticsForm = useForm({
+    _method: "put",
+    enabled: props.analyticsSetting?.enabled ?? false,
+    measurement_id: props.analyticsSetting?.measurement_id ?? "",
+    property_id: props.analyticsSetting?.property_id ?? "",
+    cache_minutes: props.analyticsSetting?.cache_minutes ?? 30,
+    service_account_file: null,
+});
 const tabs = [
     ["identity", "Identitas & Branding"],
     ["location", "Lokasi"],
     ["social", "Media Sosial"],
     ["seo", "SEO & Preview Tautan"],
+    ...(props.analyticsSetting ? [["integration", "Integrasi"]] : []),
 ];
 const seoPages = [
     ["home", "Beranda", "Halaman utama website COSMIC."],
@@ -68,6 +78,19 @@ function addSocial() {
 }
 function removeSocial(index) {
     form.socials.splice(index, 1);
+}
+function saveAnalytics() {
+    analyticsForm.post(route("admin.analytics.settings.update"), {
+        forceFormData: true,
+        preserveScroll: true,
+    });
+}
+function testAnalytics() {
+    router.post(route("admin.analytics.settings.test"), {}, { preserveScroll: true });
+}
+function removeAnalyticsCredentials() {
+    if (confirm("Hapus kredensial dan nonaktifkan Google Analytics?"))
+        router.delete(route("admin.analytics.settings.credentials.destroy"), { preserveScroll: true });
 }
 </script>
 <template>
@@ -483,8 +506,33 @@ function removeSocial(index) {
                             </label>
                         </article>
                     </div>
+                    <div v-if="analyticsSetting" v-show="tab === 'integration'" class="fields integration-fields">
+                        <div class="settings-group-heading full">
+                            <span>Google Analytics 4</span>
+                            <p>Hubungkan website dengan GA4 untuk menampilkan ringkasan pengunjung pada dashboard dan laporan lengkap.</p>
+                        </div>
+                        <div class="connection-card full" :class="analyticsSetting.connection_status">
+                            <div><strong>Status koneksi</strong><span>{{ analyticsSetting.connection_status === 'connected' ? 'Terhubung' : analyticsSetting.connection_status === 'failed' ? 'Koneksi gagal' : analyticsSetting.connection_status === 'untested' ? 'Belum diuji' : 'Belum dikonfigurasi' }}</span></div>
+                            <small v-if="analyticsSetting.last_tested_at">Terakhir diuji {{ analyticsSetting.last_tested_at }}</small>
+                            <small v-if="analyticsSetting.last_error">{{ analyticsSetting.last_error }}</small>
+                        </div>
+                        <label class="check full">
+                            <input v-model="analyticsForm.enabled" type="checkbox" />
+                            <span><b>Aktifkan Google Analytics</b><small>Tracking hanya dimuat pada halaman publik setelah konfigurasi lengkap.</small></span>
+                        </label>
+                        <label>Measurement ID<input v-model="analyticsForm.measurement_id" placeholder="G-XXXXXXXXXX" /><small>Diperoleh dari Web Data Stream GA4.</small><em>{{ analyticsForm.errors.measurement_id }}</em></label>
+                        <label>Property ID<input v-model="analyticsForm.property_id" inputmode="numeric" placeholder="123456789" /><small>Nomor properti yang digunakan untuk membaca laporan.</small><em>{{ analyticsForm.errors.property_id }}</em></label>
+                        <label>Durasi cache<select v-model="analyticsForm.cache_minutes"><option :value="15">15 menit</option><option :value="30">30 menit</option><option :value="60">60 menit</option><option :value="120">120 menit</option></select><small>30 menit direkomendasikan untuk shared hosting.</small></label>
+                        <label>Kredensial Service Account<input type="file" accept="application/json,.json" @change="analyticsForm.service_account_file = $event.target.files[0]" /><small>{{ analyticsSetting.has_credentials ? 'Kredensial sudah tersimpan secara terenkripsi. Pilih file hanya untuk mengganti.' : 'Unggah file JSON dari Google Cloud.' }}</small><em>{{ analyticsForm.errors.service_account_file }}</em></label>
+                        <p v-if="analyticsForm.errors.analytics_connection" class="form-error full">{{ analyticsForm.errors.analytics_connection }}</p>
+                        <div class="integration-actions full">
+                            <button type="button" :disabled="analyticsForm.processing" @click="saveAnalytics">Simpan Konfigurasi</button>
+                            <button type="button" class="secondary" :disabled="!analyticsSetting.has_credentials" @click="testAnalytics">Uji Koneksi</button>
+                            <button v-if="analyticsSetting.has_credentials" type="button" class="danger" @click="removeAnalyticsCredentials">Hapus Kredensial</button>
+                        </div>
+                    </div>
                 </main>
-                <footer class="savebar">
+                <footer v-if="tab !== 'integration'" class="savebar">
                     <div>
                         <strong>Perubahan disimpan sebagai draft</strong
                         ><small
@@ -1035,6 +1083,19 @@ function removeSocial(index) {
 .form-error {
     color: #ff9299;
 }
+.connection-card { display:flex; justify-content:space-between; gap:16px; padding:18px; border:1px solid #ffffff16; background:#08131e; }
+.connection-card div strong,.connection-card div span { display:block; }
+.connection-card div strong { color:#7d91a0; font-size:.58rem; text-transform:uppercase; }
+.connection-card div span { margin-top:5px; font:800 1rem var(--font-display); text-transform:uppercase; }
+.connection-card.connected { border-color:#43d39455; }
+.connection-card.connected div span { color:#43d394; }
+.connection-card.failed { border-color:#ff667055; }
+.connection-card.failed div span { color:#ff8790; }
+.connection-card small { color:#8295a3; }
+.integration-actions { display:flex; flex-wrap:wrap; gap:9px; }
+.integration-actions button { padding:13px 16px; border:1px solid var(--color-accent); color:#03101b; background:var(--color-accent); font:800 .56rem var(--font-display); text-transform:uppercase; cursor:pointer; }
+.integration-actions .secondary { color:#dce7ef; border-color:#ffffff28; background:transparent; }
+.integration-actions .danger { color:#ff9299; border-color:#ff667044; background:transparent; }
 .savebar {
     position: sticky;
     z-index: 10;
