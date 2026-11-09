@@ -32,9 +32,16 @@ class AnalyticsController extends Controller
 
     public function refresh(Request $request, GoogleAnalyticsService $analytics): RedirectResponse
     {
-        $request->validate(['start_date' => ['required', 'date'], 'end_date' => ['required', 'date', 'after_or_equal:start_date']]);
-        $analytics->report((string) $request->string('start_date'), (string) $request->string('end_date'), true);
+        $validated = $request->validate([
+            'start_date' => ['required', 'date'],
+            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+        ]);
+        $analytics->report($validated['start_date'], $validated['end_date'], true);
 
-        return back()->with('success', 'Data Google Analytics berhasil diperbarui.');
+        return redirect()->route('admin.analytics.index', [
+            'period' => 'custom',
+            'start_date' => $validated['start_date'],
+            'end_date' => $validated['end_date'],
+        ])->with('success', 'Data Google Analytics berhasil diperbarui.');
     }
 }

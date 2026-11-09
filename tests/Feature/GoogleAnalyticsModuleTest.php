@@ -9,6 +9,7 @@ use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -90,5 +91,22 @@ class GoogleAnalyticsModuleTest extends TestCase
         ]);
 
         $this->get(route('home'))->assertOk()->assertSee('googletagmanager.com/gtag/js?id=G-ABC123XYZ', false);
+    }
+
+    public function test_refresh_always_redirects_to_report_page_instead_of_post_endpoint(): void
+    {
+        $admin = User::where('role', UserRole::SuperAdmin)->firstOrFail();
+        $setting = AnalyticsSetting::current();
+        $setting->update(['enabled' => false]);
+        Cache::flush();
+
+        $this->actingAs($admin)->post(route('admin.analytics.refresh'), [
+            'start_date' => '2026-10-11',
+            'end_date' => '2026-11-09',
+        ])->assertRedirect(route('admin.analytics.index', [
+            'period' => 'custom',
+            'start_date' => '2026-10-11',
+            'end_date' => '2026-11-09',
+        ]));
     }
 }
