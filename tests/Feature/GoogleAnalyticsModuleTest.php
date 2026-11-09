@@ -10,6 +10,7 @@ use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\RateLimiter;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -99,6 +100,8 @@ class GoogleAnalyticsModuleTest extends TestCase
         $setting = AnalyticsSetting::current();
         $setting->update(['enabled' => false]);
         Cache::flush();
+        $rateLimitKey = 'analytics-refresh:'.$admin->getAuthIdentifier();
+        RateLimiter::clear($rateLimitKey);
 
         $this->actingAs($admin)->post(route('admin.analytics.refresh'), [
             'start_date' => '2026-10-11',
@@ -108,5 +111,24 @@ class GoogleAnalyticsModuleTest extends TestCase
             'start_date' => '2026-10-11',
             'end_date' => '2026-11-09',
         ]));
+
+        $this->actingAs($admin)->post(route('admin.analytics.refresh'), [
+            'start_date' => '2026-10-11',
+            'end_date' => '2026-11-09',
+        ])->assertRedirect(route('admin.analytics.index', [
+            'period' => 'custom',
+            'start_date' => '2026-10-11',
+            'end_date' => '2026-11-09',
+        ]))->assertSessionHasErrors('refresh');
+
+        RateLimiter::clear($rateLimitKey);
+    }
+
+    public function test_get_refresh_url_safely_returns_to_analytics_page(): void
+    {
+        $admin = User::where('role', UserRole::SuperAdmin)->firstOrFail();
+
+        $this->actingAs($admin)->get('/admin/analytics/refresh')
+            ->assertRedirect(route('admin.analytics.index'));
     }
 }

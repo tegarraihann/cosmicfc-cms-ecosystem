@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\GoogleAnalyticsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -36,6 +37,22 @@ class AnalyticsController extends Controller
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
         ]);
+
+        $rateLimitKey = 'analytics-refresh:'.$request->user()->getAuthIdentifier();
+
+        if (RateLimiter::tooManyAttempts($rateLimitKey, 1)) {
+            $minutes = max(1, (int) ceil(RateLimiter::availableIn($rateLimitKey) / 60));
+
+            return redirect()->route('admin.analytics.index', [
+                'period' => 'custom',
+                'start_date' => $validated['start_date'],
+                'end_date' => $validated['end_date'],
+            ])->withErrors([
+                'refresh' => "Data baru saja diperbarui. Coba kembali dalam {$minutes} menit.",
+            ]);
+        }
+
+        RateLimiter::hit($rateLimitKey, 300);
         $analytics->report($validated['start_date'], $validated['end_date'], true);
 
         return redirect()->route('admin.analytics.index', [

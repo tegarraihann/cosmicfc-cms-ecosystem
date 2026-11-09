@@ -73,7 +73,8 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin/club-profile')->
 
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin/analytics')->name('admin.analytics.')->group(function () {
     Route::get('/', [AnalyticsController::class, 'index'])->middleware('permission:analytics.view')->name('index');
-    Route::post('/refresh', [AnalyticsController::class, 'refresh'])->middleware(['permission:analytics.refresh', 'throttle:1,5'])->name('refresh');
+    Route::post('/refresh', [AnalyticsController::class, 'refresh'])->middleware('permission:analytics.refresh')->name('refresh');
+    Route::get('/refresh', fn () => redirect()->route('admin.analytics.index'))->middleware('permission:analytics.view')->name('refresh.fallback');
     Route::put('/settings', [AnalyticsSettingsController::class, 'update'])->middleware('permission:analytics.configure')->name('settings.update');
     Route::post('/settings/test', [AnalyticsSettingsController::class, 'test'])->middleware(['permission:analytics.configure', 'throttle:3,1'])->name('settings.test');
     Route::delete('/settings/credentials', [AnalyticsSettingsController::class, 'destroyCredentials'])->middleware('permission:analytics.configure')->name('settings.credentials.destroy');
