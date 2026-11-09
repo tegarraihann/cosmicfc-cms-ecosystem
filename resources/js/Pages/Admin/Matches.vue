@@ -970,7 +970,7 @@ function deleteEvent(e) {
                                 max="300"
                                 step="5"
                             /><small
-                                >Dalam menit. Sistem memakai nilai ini untuk pengingat dan waktu selesai otomatis.</small
+                                >Dalam menit (minimal 30). Sistem memakai nilai ini untuk pengingat dan waktu selesai otomatis.</small
                             ><em v-if="form.errors.duration_minutes">{{
                                 form.errors.duration_minutes
                             }}</em></label

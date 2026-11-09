@@ -35,6 +35,7 @@ class SparingMatchTest extends TestCase
             'home_club_id' => $home->id,
             'away_club_id' => $away->id,
             'kickoff_at' => now()->addDay()->format('Y-m-d H:i:s'),
+            'duration_minutes' => 30,
             'timezone' => 'Asia/Jakarta',
             'venue_name' => 'Lapangan Uji',
             'venue_address' => 'Pekanbaru',
@@ -55,6 +56,8 @@ class SparingMatchTest extends TestCase
         $this->assertNull($match->round_name);
         $this->assertFalse($match->count_for_standings);
         $this->assertTrue($match->is_featured);
+        $this->assertSame(30, $match->duration_minutes);
+        $this->assertEquals(30, $match->kickoff_at->diffInMinutes($match->expected_end_at));
 
         $this->get(route('home'))->assertOk()->assertInertia(fn ($page) => $page
             ->where('matchData.next.slug', $match->slug)
@@ -79,6 +82,30 @@ class SparingMatchTest extends TestCase
                 ->has('matches.data', 1)
                 ->where('matches.data.0.match_type', 'sparing')
                 ->where('filters.match_type', 'sparing'));
+    }
+
+    public function test_match_duration_cannot_be_less_than_thirty_minutes(): void
+    {
+        $admin = User::where('email', 'superadmin@cosmic.test')->firstOrFail();
+        $home = $this->club('cosmic-duration-validation', 'COSMIC Duration', true);
+        $away = $this->club('opponent-duration-validation', 'Opponent Duration');
+
+        $this->actingAs($admin)->post(route('admin.matches.store'), [
+            'slug' => 'invalid-short-duration',
+            'match_type' => 'sparing',
+            'home_club_id' => $home->id,
+            'away_club_id' => $away->id,
+            'kickoff_at' => now()->addDay()->format('Y-m-d H:i:s'),
+            'duration_minutes' => 29,
+            'timezone' => 'Asia/Jakarta',
+            'status' => 'scheduled',
+            'score_mode' => 'automatic',
+            'count_for_standings' => false,
+            'is_featured' => false,
+            'is_public' => true,
+        ])->assertSessionHasErrors('duration_minutes');
+
+        $this->assertDatabaseMissing('matches', ['slug' => 'invalid-short-duration']);
     }
 
     private function club(string $slug, string $name, bool $cosmic = false): Club
