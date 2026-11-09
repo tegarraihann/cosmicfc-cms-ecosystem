@@ -14,6 +14,12 @@ const props = defineProps({
 const page = usePage();
 const site = computed(() => page.props.site ?? {});
 const clubName = computed(() => site.value.identity?.shortName || site.value.identity?.name || 'COSMIC');
+const officialClubName = computed(() => site.value.identity?.name || clubName.value);
+const brandLength = computed(() => Array.from(clubName.value.trim()).length);
+const brandSizeClass = computed(() => ({
+    'footer-logo--medium': brandLength.value > 12 && brandLength.value <= 20,
+    'footer-logo--long': brandLength.value > 20,
+}));
 const logo = computed(() => site.value.branding?.logo || '/Assets/Logo/Logo.jpeg');
 const displayedLocation = computed(() => [site.value.location?.city, site.value.location?.country].filter(Boolean).join(', ') || props.location);
 const displayedYear = computed(() => site.value.identity?.foundedYear || props.copyrightYear);
@@ -26,9 +32,9 @@ const socialHref = (platform, fallback) => site.value.socials?.find((social) => 
         <div class="shell">
             <div class="footer-main">
                 <div class="footer-brand">
-                    <a class="footer-logo" href="#top" :aria-label="`${clubName}, kembali ke atas`">
+                    <a class="footer-logo" :class="brandSizeClass" href="#top" :title="clubName" :aria-label="`${clubName}, kembali ke atas`">
                         <img :src="logo" :alt="`Logo ${clubName}`" loading="lazy" decoding="async" />
-                        {{ clubName }}<span>.</span>
+                        <span class="footer-logo-name">{{ clubName }}</span><span class="footer-logo-dot" aria-hidden="true">.</span>
                     </a>
                     <div class="footer-address">Mini Soccer Collective<br />{{ displayedLocation }}</div>
                 </div>
@@ -55,7 +61,7 @@ const socialHref = (platform, fallback) => site.value.socials?.find((social) => 
             </div>
 
             <div class="footer-bottom">
-                <span>© {{ displayedYear }} {{ clubName }}. All rights reserved.</span>
+                <span>© {{ displayedYear }} {{ officialClubName }}. All rights reserved.</span>
                 <span>{{ site.identity?.tagline || 'Good people. Better football.' }}</span>
             </div>
         </div>
@@ -65,12 +71,16 @@ const socialHref = (platform, fallback) => site.value.socials?.find((social) => 
 <style scoped>
 .site-footer { position: relative; padding: 30px 0 21px; border-top: 1px solid var(--color-line); background: radial-gradient(circle at 88% 10%,rgba(69,183,255,.06),transparent 22%),var(--color-surface); }
 .shell { width: min(calc(100% - 80px),var(--content-max)); margin-inline: auto; }
-.footer-main { display: grid; grid-template-columns: minmax(260px,1fr) auto minmax(320px,1fr); align-items: center; gap: 45px; padding-bottom: 25px; }
-.footer-brand { display: flex; align-items: center; gap: 28px; }
-.footer-logo { display: flex; flex: 0 0 auto; align-items: center; gap: 10px; color: var(--color-paper); font: 400 2rem/1 var(--font-brand); letter-spacing: -.09em; text-decoration: none; }
+.footer-main { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(280px,1fr); align-items: center; gap: 45px; padding-bottom: 25px; }
+.footer-brand { display: flex; min-width: 0; align-items: center; gap: 28px; }
+.footer-logo { display: flex; max-width: min(100%,320px); min-width: 0; align-items: center; gap: 10px; color: var(--color-paper); font: 400 2rem/1 var(--font-brand); letter-spacing: -.09em; text-decoration: none; }
+.footer-logo-name { min-width: 0; overflow-wrap: anywhere; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.footer-logo--medium { font-size: 1.7rem; }
+.footer-logo--long { font-size: 1.4rem; line-height: .94; letter-spacing: -.06em; }
 .footer-logo img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
-.footer-logo span { color: var(--color-accent); text-shadow: 0 0 14px rgba(69,183,255,.2); }
-.footer-address { padding-left: 27px; border-left: 1px solid rgba(255,255,255,.25); color: #b9c5cf; font: 600 .62rem/1.55 var(--font-display); letter-spacing: .2em; text-transform: uppercase; }
+.footer-logo img,.footer-logo-dot { flex: 0 0 auto; }
+.footer-logo-dot { align-self: flex-end; color: var(--color-accent); text-shadow: 0 0 14px rgba(69,183,255,.2); }
+.footer-address { flex: 0 0 auto; padding-left: 27px; border-left: 1px solid rgba(255,255,255,.25); color: #b9c5cf; font: 600 .62rem/1.55 var(--font-display); letter-spacing: .2em; text-transform: uppercase; }
 .footer-nav { display: flex; align-items: center; justify-content: center; gap: 27px; }
 .footer-nav a { color: #b9c5cf; font: 700 .63rem var(--font-display); letter-spacing: .12em; text-decoration: none; text-transform: uppercase; transition: color .2s; }
 .footer-nav a:hover { color: var(--color-accent); }
@@ -97,8 +107,10 @@ const socialHref = (platform, fallback) => site.value.socials?.find((social) => 
     .site-footer { padding-top: 34px; padding-bottom: 26px; }
     .shell { width: calc(100% - 32px); }
     .footer-main { grid-template-columns: 1fr; gap: 29px; }
-    .footer-brand { grid-column: auto; align-items: flex-start; }
-    .footer-logo { font-size: 1.65rem; }
+    .footer-brand { grid-column: auto; display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: flex-start; gap: 18px; }
+    .footer-logo { max-width: 100%; font-size: 1.65rem; }
+    .footer-logo--medium { font-size: 1.35rem; }
+    .footer-logo--long { font-size: 1.12rem; }
     .footer-address { padding-left: 18px; }
     .footer-nav { justify-content: flex-start; flex-wrap: wrap; row-gap: 15px; }
     .footer-side { justify-content: space-between; }

@@ -15,6 +15,11 @@ const branding = computed(() => site.value.branding ?? {});
 const clubName = computed(
     () => identity.value.shortName || identity.value.name || "COSMIC",
 );
+const brandLength = computed(() => Array.from(clubName.value.trim()).length);
+const brandSizeClass = computed(() => ({
+    "brand--medium": brandLength.value > 12 && brandLength.value <= 20,
+    "brand--long": brandLength.value > 20,
+}));
 const logo = computed(() => branding.value.logo || "/Assets/Logo/Logo.jpeg");
 const currentPath = computed(() => page.url.split("?")[0]);
 const isActive = (item) =>
@@ -47,11 +52,14 @@ watchEffect(() => {
         <nav class="navbar shell" aria-label="Navigasi utama">
             <Link
                 class="brand"
+                :class="brandSizeClass"
                 href="/"
+                :title="clubName"
                 :aria-label="`${clubName}, kembali ke beranda`"
             >
                 <img :src="logo" :alt="`Logo ${clubName}`" />
-                {{ clubName }}<span>.</span>
+                <span class="brand-name">{{ clubName }}</span
+                ><span class="brand-dot" aria-hidden="true">.</span>
             </Link>
 
             <div
@@ -173,11 +181,13 @@ watchEffect(() => {
 .navbar {
     height: 108px;
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
 }
 .brand {
-    width: max-content;
+    width: fit-content;
+    max-width: min(100%, 320px);
+    min-width: 0;
     display: flex;
     align-items: center;
     gap: 11px;
@@ -186,13 +196,28 @@ watchEffect(() => {
     letter-spacing: -0.09em;
     text-decoration: none;
 }
+.brand-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.brand--medium {
+    font-size: clamp(1.35rem, 1.85vw, 1.85rem);
+}
+.brand--long {
+    max-width: min(100%, 290px);
+    font-size: clamp(1.12rem, 1.45vw, 1.5rem);
+    letter-spacing: -0.065em;
+}
 .brand img {
     width: 39px;
     height: 39px;
     border-radius: 50%;
     object-fit: cover;
 }
-.brand span {
+.brand-dot {
+    flex: 0 0 auto;
     color: var(--color-accent);
 }
 .desktop-links {
@@ -274,7 +299,7 @@ watchEffect(() => {
         width: min(calc(100% - 40px), var(--content-max));
     }
     .navbar {
-        grid-template-columns: 1fr auto;
+        grid-template-columns: minmax(0, 1fr) auto;
     }
     .nav-action {
         display: none;
@@ -319,10 +344,18 @@ watchEffect(() => {
     }
     .navbar {
         height: 78px;
-        grid-template-columns: 1fr auto;
+        grid-template-columns: minmax(0, 1fr) auto;
     }
     .brand {
+        max-width: calc(100% - 12px);
         font-size: 1.35rem;
+    }
+    .brand--medium {
+        font-size: 1.12rem;
+    }
+    .brand--long {
+        font-size: 0.98rem;
+        letter-spacing: -0.045em;
     }
     .brand img {
         width: 34px;

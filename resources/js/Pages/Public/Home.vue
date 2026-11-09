@@ -101,6 +101,35 @@ const nextMatch = computed(() =>
           }
         : {},
 );
+function homeNextMatchProps(content = {}) {
+    const match = nextMatch.value;
+
+    return {
+        label: content.label || "Next Match",
+        emptyTitle:
+            content.emptyTitle ||
+            "Pertandingan berikutnya belum dijadwalkan.",
+        emptyDescription:
+            content.emptyDescription ||
+            "Informasi jadwal terbaru akan ditampilkan di sini.",
+        backgroundImage:
+            content.backgroundImage || match.backgroundImage || "",
+        ...(props.matchData.next
+            ? {
+                  homeTeam: match.homeTeam,
+                  homeLogo: match.homeLogo,
+                  awayTeam: match.awayTeam,
+                  awayLogo: match.awayLogo,
+                  awayCode: match.awayCode,
+                  date: match.date,
+                  time: match.time,
+                  venue: match.venue,
+                  city: match.city,
+                  detailHref: match.detailHref,
+              }
+            : {}),
+    };
+}
 const matchCenter = computed(() => ({
     upcoming: (props.matchData.upcoming || []).slice(0, 3).map((m) => ({
         day: m.date?.slice(0, 2),
@@ -140,7 +169,7 @@ const matchCenter = computed(() => ({
             </template>
             <NextMatchSection
                 v-else-if="section.key === 'home.next_match'"
-                v-bind="{ ...section.content, ...nextMatch }"
+                v-bind="homeNextMatchProps(section.content)"
             />
             <MatchCenterSection
                 v-else-if="section.key === 'home.match_center'"

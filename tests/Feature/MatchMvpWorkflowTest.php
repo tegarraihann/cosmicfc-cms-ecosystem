@@ -114,7 +114,7 @@ class MatchMvpWorkflowTest extends TestCase
 
         $decision = [
             'player_id' => $this->secondPlayer->id,
-            'title' => 'Player of the Match',
+            'title' => 'MVP Pertandingan',
             'editorial' => 'Menjadi pengatur tempo dan pembeda utama sepanjang pertandingan.',
             'status' => 'published',
         ];
@@ -129,11 +129,14 @@ class MatchMvpWorkflowTest extends TestCase
         $award = PlayerAward::where('match_id', $this->match->id)->firstOrFail();
         $this->assertSame('published', $award->status);
         $this->assertSame($this->secondPlayer->id, $award->player_id);
+        $this->assertSame('MVP Pertandingan', $award->title);
         $this->assertCount(2, $award->nominees);
         $this->get(route('matches.show', $this->match->slug))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('awardData.player.name', 'Pemain Dua')
+                ->where('awardData.title', 'MVP Pertandingan')
+                ->where('awardData.typeName', 'Player of the Match')
                 ->where('awardData.statistics.assists', 1));
     }
 

@@ -4,6 +4,14 @@ import { computed } from "vue";
 
 const props = defineProps({
     label: { type: String, default: "Next Match" },
+    emptyTitle: {
+        type: String,
+        default: "Pertandingan berikutnya belum dijadwalkan.",
+    },
+    emptyDescription: {
+        type: String,
+        default: "Informasi jadwal terbaru akan ditampilkan di sini.",
+    },
     homeTeam: { type: String, default: "" },
     homeLogo: { type: String, default: null },
     awayTeam: { type: String, default: "" },
@@ -42,7 +50,7 @@ const teamNameClass = (name) => {
         aria-labelledby="next-match-title"
     >
         <div class="match-background" aria-hidden="true"></div>
-        <div class="match-layout shell">
+        <div v-if="hasMatch" class="match-layout shell">
             <div class="match-main">
                 <div id="next-match-title" class="section-label">
                     {{ label }}
@@ -142,6 +150,11 @@ const teamNameClass = (name) => {
                 </span>
             </div>
         </div>
+        <div v-else class="empty-layout shell">
+            <div id="next-match-title" class="section-label">{{ label }}</div>
+            <h2>{{ emptyTitle }}</h2>
+            <p v-if="emptyDescription">{{ emptyDescription }}</p>
+        </div>
     </section>
 </template>
 
@@ -201,6 +214,31 @@ const teamNameClass = (name) => {
     align-items: center;
     gap: 34px;
     padding-block: 28px;
+}
+.empty-layout {
+    min-height: 205px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-block: 42px;
+}
+.empty-layout .section-label {
+    margin-bottom: 13px;
+}
+.empty-layout h2 {
+    max-width: 760px;
+    margin: 0;
+    color: var(--color-paper);
+    font: 900 clamp(2rem, 4vw, 4rem) / 0.92 var(--font-display);
+    letter-spacing: -0.035em;
+    text-transform: uppercase;
+}
+.empty-layout p {
+    max-width: 620px;
+    margin: 14px 0 0;
+    color: #9baab6;
+    font-size: 0.9rem;
+    line-height: 1.6;
 }
 .match-main {
     min-width: 0;
@@ -370,6 +408,10 @@ const teamNameClass = (name) => {
         grid-template-columns: 1fr 1fr;
         gap: 26px;
         padding-block: 34px;
+    }
+    .empty-layout {
+        min-height: 230px;
+        padding-block: 36px;
     }
     .match-main {
         grid-column: 1/-1;

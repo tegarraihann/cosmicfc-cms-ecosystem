@@ -127,11 +127,21 @@ function removeSocial(index) {
                             </p>
                         </div>
                         <label class="full"
-                            >Nama klub navbar &amp; footer<input
+                            >Nama resmi klub<input
+                                v-model="form.club_name"
+                            /><small
+                                >Digunakan untuk profil resmi, metadata, dan
+                                copyright. Nama ini boleh ditulis lengkap.</small
+                            ><em>{{ form.errors.club_name }}</em></label
+                        ><label class="full"
+                            >Nama tampilan singkat<input
                                 v-model="form.short_name"
+                                maxlength="30"
                             /><small
                                 >Ditampilkan di samping logo pada navbar dan
-                                footer seluruh halaman.</small
+                                footer. Disarankan maksimal 12 karakter, contoh:
+                                COSMIC FC. Nama yang lebih panjang akan
+                                disesuaikan otomatis.</small
                             ><em>{{ form.errors.short_name }}</em></label
                         ><label class="full"
                             >Slogan footer<input v-model="form.tagline" /><small

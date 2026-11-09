@@ -92,7 +92,7 @@ const evidenceText = (candidate) => `${candidate.evidence.goals} gol · ${candid
 
             <header class="page-head">
                 <div>
-                    <span>Player of the Match</span>
+                    <span>{{ decisionForm.title || "Player of the Match" }}</span>
                     <h1>{{ match.home }} <b>vs</b> {{ match.away }}</h1>
                     <p>{{ match.competition }} · {{ match.kickoff }} · {{ match.venue || "Lokasi belum diatur" }}</p>
                 </div>

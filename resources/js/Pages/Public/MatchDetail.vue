@@ -122,7 +122,7 @@ const pageRoot = ref(null);
                         :alt="awardData.player.name"
                     />
                     <div>
-                        <small>{{ awardData.typeName }}</small>
+                        <small>{{ awardData.title || awardData.typeName || "Player of the Match" }}</small>
                         <h2>{{ awardData.player.name }}</h2>
                         <p>{{ awardData.editorial }}</p>
                         <div class="potm-stats">

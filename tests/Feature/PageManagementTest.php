@@ -127,6 +127,26 @@ class PageManagementTest extends TestCase
             ->where('sources.0.route', 'admin.matches.index'));
     }
 
+    public function test_next_match_editors_expose_editorial_fields_and_automatic_match_source(): void
+    {
+        $admin = User::where('role', UserRole::SuperAdmin)->firstOrFail();
+
+        foreach (['home.next_match', 'schedule.next_match'] as $sectionKey) {
+            $section = PageSection::where('section_key', $sectionKey)->firstOrFail();
+
+            $this->actingAs($admin)->get(route('admin.sections.edit', $section))
+                ->assertOk()->assertInertia(fn (Assert $page) => $page
+                    ->component('Admin/SectionEditor')
+                    ->has('fields', 4)
+                    ->where('fields.label.default', 'Next Match')
+                    ->where('fields.emptyTitle.default', 'Pertandingan berikutnya belum dijadwalkan.')
+                    ->where('fields.emptyDescription.type', 'textarea')
+                    ->where('fields.backgroundImage.type', 'image')
+                    ->has('sources', 1)
+                    ->where('sources.0.route', 'admin.matches.index'));
+        }
+    }
+
     public function test_dynamic_module_data_cannot_be_saved_as_section_content(): void
     {
         $admin = User::where('role', UserRole::SuperAdmin)->firstOrFail();

@@ -15,8 +15,70 @@ const props = defineProps({
         type: Object,
         default: () => ({ live: null, next: null, upcoming: [], results: [] }),
     },
+    competitionData: {
+        type: Object,
+        default: () => ({ competition: null, season: null }),
+    },
     standingsData: { type: Object, default: () => ({ compact: [] }) },
 });
+const publishedMatches = computed(() => {
+    const matches = [
+        ...(props.matchData.live ? [props.matchData.live] : []),
+        ...(props.matchData.upcoming || []),
+        ...(props.matchData.results || []),
+    ];
+
+    return [...new Map(matches.map((match) => [match.id, match])).values()];
+});
+const heroPanel = computed(() => {
+    const season = props.competitionData.season;
+
+    if (season) {
+        const status = {
+            scheduled: "Akan dimulai",
+            ongoing: "Sedang berlangsung",
+            completed: "Musim selesai",
+        }[season.status] || "Status musim belum diatur";
+
+        return {
+            label: "Musim Aktif",
+            value: season.name || "Musim",
+            status,
+        };
+    }
+
+    const sparingCount = publishedMatches.value.filter(
+        (match) => match.type === "sparing",
+    ).length;
+
+    if (sparingCount > 0) {
+        return {
+            label: "Jenis Pertandingan",
+            value: "Sparing",
+            status: `${sparingCount} pertandingan tersedia`,
+        };
+    }
+
+    return {
+        label: "Musim Aktif",
+        value: "Belum tersedia",
+        status: "Kompetisi belum diatur",
+    };
+});
+function scheduleHeroProps(content = {}) {
+    return {
+        pageLabel: "Jadwal",
+        title: "Jadwal",
+        titleAccent: "Pertandingan.",
+        description:
+            "Ikuti setiap langkah COSMIC sepanjang musim. Temukan jadwal pertandingan mendatang, lokasi bermain, dan hasil terbaru tim kami.",
+        scrollLabel: "Scroll untuk jadwal",
+        ...content,
+        panelLabel: heroPanel.value.label,
+        panelValue: heroPanel.value.value,
+        panelStatus: heroPanel.value.status,
+    };
+}
 const dynamicNext = computed(() =>
     props.matchData.next
         ? {
@@ -88,15 +150,7 @@ const resultProps = computed(() => {
         <template v-for="section in layoutSections" :key="section.key">
             <template v-if="section.key === 'schedule.hero'">
                 <PageHeroSection
-                    page-label="Jadwal"
-                    title="Jadwal"
-                    title-accent="Pertandingan."
-                    description="Ikuti setiap langkah COSMIC sepanjang musim. Temukan jadwal pertandingan mendatang, lokasi bermain, dan hasil terbaru tim kami."
-                    panel-label="Musim Aktif"
-                    panel-value="2026"
-                    panel-status="Season in progress"
-                    scroll-label="Scroll untuk jadwal"
-                    v-bind="section.content"
+                    v-bind="scheduleHeroProps(section.content)"
                 >
                     <template #navigation>
                         <SiteNavbar />
@@ -106,6 +160,7 @@ const resultProps = computed(() => {
             </template>
             <ScheduleNextMatchSection
                 v-else-if="section.key === 'schedule.next_match'"
+                v-bind="section.content"
                 :match="dynamicNext"
             />
             <MatchScheduleSection
