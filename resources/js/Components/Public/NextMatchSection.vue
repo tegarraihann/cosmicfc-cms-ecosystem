@@ -1,6 +1,7 @@
 <script setup>
 import { Link } from "@inertiajs/vue3";
 import { computed } from "vue";
+import { teamNameSizeClass } from "@/utils/teamNameDisplay";
 
 const props = defineProps({
     label: { type: String, default: "Next Match" },
@@ -31,15 +32,6 @@ const backgroundStyle = computed(() =>
         ? { "--match-image": `url("${props.backgroundImage}")` }
         : {},
 );
-const teamNameClass = (name) => {
-    const length = String(name || "").trim().length;
-
-    return {
-        "is-medium": length > 11,
-        "is-long": length > 19,
-        "is-extra-long": length > 29,
-    };
-};
 </script>
 
 <template>
@@ -59,7 +51,8 @@ const teamNameClass = (name) => {
                     <div class="team team-home">
                         <h2
                             class="team-name"
-                            :class="teamNameClass(homeTeam)"
+                            :class="teamNameSizeClass(homeTeam)"
+                            :title="homeTeam"
                         >
                             {{ homeTeam || "—" }}
                         </h2>
@@ -84,7 +77,8 @@ const teamNameClass = (name) => {
                         </div>
                         <h2
                             class="team-name"
-                            :class="teamNameClass(awayTeam)"
+                            :class="teamNameSizeClass(awayTeam)"
+                            :title="awayTeam"
                         >
                             {{ awayTeam || "—" }}
                         </h2>
@@ -315,8 +309,12 @@ const teamNameClass = (name) => {
     letter-spacing: -0.045em;
     text-transform: uppercase;
     text-wrap: balance;
-    overflow-wrap: break-word;
+    display: -webkit-box;
+    overflow: hidden;
+    overflow-wrap: anywhere;
     word-break: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
 }
 .team-name.is-medium {
     font-size: clamp(1.65rem, 2.7vw, 3.1rem);
