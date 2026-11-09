@@ -4,11 +4,17 @@ namespace Tests\Feature;
 
 use App\Models\Club;
 use App\Models\GameMatch;
+use App\Models\MatchAdminPresence;
 use App\Models\MatchAudit;
+use App\Models\MatchNotificationLog;
+use App\Models\User;
+use App\Notifications\MatchResultReminderNotification;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -75,6 +81,109 @@ class AutomaticMatchStatusTest extends TestCase
         }
     }
 
+    public function test_live_match_is_completed_after_expected_end(): void
+    {
+        CarbonImmutable::setTestNow('2026-11-05 22:00:00', 'Asia/Jakarta');
+        $match = $this->match([
+            'status' => 'live',
+            'kickoff_at' => '2026-11-05 20:00:00',
+            'expected_end_at' => '2026-11-05 22:00:00',
+            'home_score' => 0,
+            'away_score' => 0,
+        ]);
+
+        Artisan::call('matches:sync-statuses');
+
+        $match->refresh();
+        $this->assertSame('completed', $match->status);
+        $this->assertNotNull($match->result_finalized_at);
+        $this->assertDatabaseHas('match_audits', ['match_id' => $match->id, 'action' => 'status_automatically_completed']);
+    }
+
+    public function test_reminder_is_sent_once_when_no_admin_is_active(): void
+    {
+        CarbonImmutable::setTestNow('2026-11-05 21:50:00', 'Asia/Jakarta');
+        Notification::fake();
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true], 200)]);
+        config()->set('services.telegram.bot_token', 'secret-test-token');
+        config()->set('services.telegram.chat_id', '123456');
+        User::factory()->superAdmin()->create(['is_active' => true]);
+        $match = $this->match([
+            'status' => 'live',
+            'expected_end_at' => '2026-11-05 22:00:00',
+            'home_score' => 1,
+            'away_score' => 0,
+        ]);
+
+        Artisan::call('matches:sync-statuses');
+        Artisan::call('matches:sync-statuses');
+
+        Notification::assertSentTimes(MatchResultReminderNotification::class, 1);
+        Http::assertSentCount(1);
+        $this->assertSame(2, MatchNotificationLog::where('match_id', $match->id)->where('status', 'sent')->count());
+    }
+
+    public function test_external_reminder_is_deferred_while_admin_is_active(): void
+    {
+        CarbonImmutable::setTestNow('2026-11-05 21:50:00', 'Asia/Jakarta');
+        Notification::fake();
+        Http::fake();
+        config()->set('services.telegram.bot_token', 'secret-test-token');
+        config()->set('services.telegram.chat_id', '123456');
+        $admin = User::factory()->superAdmin()->create(['is_active' => true]);
+        $match = $this->match([
+            'status' => 'live',
+            'expected_end_at' => '2026-11-05 22:00:00',
+            'home_score' => 1,
+            'away_score' => 0,
+        ]);
+        MatchAdminPresence::create(['match_id' => $match->id, 'user_id' => $admin->id, 'area' => 'events', 'last_seen_at' => now()]);
+
+        Artisan::call('matches:sync-statuses');
+
+        Notification::assertNothingSent();
+        Http::assertNothingSent();
+        $this->assertDatabaseCount('match_notification_logs', 0);
+    }
+
+    public function test_admin_heartbeat_endpoint_records_presence(): void
+    {
+        $admin = User::factory()->superAdmin()->create(['is_active' => true]);
+        $match = $this->match();
+
+        $this->actingAs($admin)
+            ->postJson(route('admin.matches.heartbeat', $match), ['area' => 'events'])
+            ->assertOk()
+            ->assertJson(['recorded' => true]);
+
+        $this->assertDatabaseHas('match_admin_presences', [
+            'match_id' => $match->id,
+            'user_id' => $admin->id,
+            'area' => 'events',
+        ]);
+    }
+
+    public function test_failed_telegram_delivery_does_not_store_bot_token(): void
+    {
+        CarbonImmutable::setTestNow('2026-11-05 21:50:00', 'Asia/Jakarta');
+        Notification::fake();
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => false], 500)]);
+        config()->set('services.telegram.bot_token', 'very-secret-token');
+        config()->set('services.telegram.chat_id', '123456');
+        $match = $this->match([
+            'status' => 'live',
+            'expected_end_at' => '2026-11-05 22:00:00',
+            'home_score' => 0,
+            'away_score' => 0,
+        ]);
+
+        Artisan::call('matches:sync-statuses');
+
+        $log = MatchNotificationLog::where('match_id', $match->id)->where('channel', 'telegram')->firstOrFail();
+        $this->assertSame('failed', $log->status);
+        $this->assertStringNotContainsString('very-secret-token', (string) $log->error_summary);
+    }
+
     private function match(array $changes = []): GameMatch
     {
         static $sequence = 0;
@@ -89,6 +198,7 @@ class AutomaticMatchStatusTest extends TestCase
             'home_club_id' => $home->id,
             'away_club_id' => $away->id,
             'kickoff_at' => '2026-11-05 20:00:00',
+            'duration_minutes' => 120,
             'timezone' => 'Asia/Jakarta',
             'status' => 'scheduled',
             'score_mode' => 'automatic',

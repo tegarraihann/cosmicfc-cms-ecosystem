@@ -35,4 +35,14 @@ return [
         ],
     ],
 
+    'telegram' => [
+        'bot_token' => env('TELEGRAM_BOT_TOKEN'),
+        'chat_id' => env('TELEGRAM_CHAT_ID'),
+    ],
+
+    'match_reminders' => [
+        'lead_minutes' => env('MATCH_REMINDER_LEAD_MINUTES', 15),
+        'presence_ttl_minutes' => env('MATCH_ADMIN_PRESENCE_TTL_MINUTES', 3),
+    ],
+
 ];

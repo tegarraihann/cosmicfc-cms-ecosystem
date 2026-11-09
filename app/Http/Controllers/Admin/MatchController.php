@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Club;
 use App\Models\CompetitionParticipant;
 use App\Models\GameMatch;
+use App\Models\MatchAdminPresence;
 use App\Models\MatchAudit;
 use App\Models\Media;
 use App\Models\MediaUsage;
@@ -14,6 +15,7 @@ use App\Models\Season;
 use App\Services\MatchEventService;
 use App\Services\MatchService;
 use App\Services\StandingsService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -100,6 +102,17 @@ class MatchController extends Controller
         return back()->with('success', 'Lineup berhasil disimpan.');
     }
 
+    public function heartbeat(Request $request, GameMatch $match): JsonResponse
+    {
+        $data = $request->validate(['area' => ['required', Rule::in(['result', 'events', 'lineup'])]]);
+        MatchAdminPresence::updateOrCreate(
+            ['match_id' => $match->id, 'user_id' => $request->user()->id, 'area' => $data['area']],
+            ['last_seen_at' => now()],
+        );
+
+        return response()->json(['recorded' => true, 'at' => now()->toIso8601String()]);
+    }
+
     public function destroy(Request $r, GameMatch $match, MatchService $s): RedirectResponse
     {
         if (in_array($match->status, ['completed', 'walkover']) || $match->lineups()->exists() || $match->events()->exists()) {
@@ -114,8 +127,13 @@ class MatchController extends Controller
 
     private function validated(Request $r, ?GameMatch $m = null): array
     {
-        $r->merge(['score_mode' => $r->input('score_mode', $m?->score_mode ?? 'automatic')]);
-        $d = $r->validate(['slug' => ['required', 'alpha_dash', 'max:180', Rule::unique('matches', 'slug')->ignore($m)], 'season_id' => ['nullable', 'exists:seasons,id'], 'match_type' => ['required', Rule::in(['competitive', 'friendly', 'sparing', 'tournament', 'exhibition'])], 'matchday' => ['nullable', 'integer', 'min:1'], 'round_name' => ['nullable', 'string', 'max:100'], 'home_club_id' => ['required', 'exists:clubs,id', 'different:away_club_id'], 'away_club_id' => ['required', 'exists:clubs,id'], 'kickoff_at' => ['nullable', 'date'], 'timezone' => ['required', Rule::in(['Asia/Jakarta'])], 'venue_name' => ['nullable', 'string', 'max:180'], 'venue_address' => ['nullable', 'string', 'max:300'], 'status' => ['required', Rule::in(['draft', 'scheduled', 'live', 'completed', 'postponed', 'cancelled', 'walkover'])], 'score_mode' => ['required', Rule::in(['automatic', 'manual'])], 'home_score' => ['nullable', 'integer', 'min:0'], 'away_score' => ['nullable', 'integer', 'min:0'], 'home_penalty_score' => ['nullable', 'integer', 'min:0'], 'away_penalty_score' => ['nullable', 'integer', 'min:0'], 'manual_score_reason' => ['nullable', 'string', 'max:1000'], 'count_for_standings' => ['boolean'], 'is_featured' => ['boolean'], 'is_public' => ['boolean'], 'cover_media_id' => ['nullable', 'exists:media,id'], 'short_report' => ['nullable', 'string', 'max:3000'], 'attendance' => ['nullable', 'integer', 'min:0']]);
+        $r->merge([
+            'score_mode' => $r->input('score_mode', $m?->score_mode ?? 'automatic'),
+            'duration_minutes' => $r->input('duration_minutes', $m?->duration_minutes ?? 120),
+        ]);
+        $d = $r->validate(['slug' => ['required', 'alpha_dash', 'max:180', Rule::unique('matches', 'slug')->ignore($m)], 'season_id' => ['nullable', 'exists:seasons,id'], 'match_type' => ['required', Rule::in(['competitive', 'friendly', 'sparing', 'tournament', 'exhibition'])], 'matchday' => ['nullable', 'integer', 'min:1'], 'round_name' => ['nullable', 'string', 'max:100'], 'home_club_id' => ['required', 'exists:clubs,id', 'different:away_club_id'], 'away_club_id' => ['required', 'exists:clubs,id'], 'kickoff_at' => ['nullable', 'date'], 'duration_minutes' => ['required', 'integer', 'between:30,300'], 'timezone' => ['required', Rule::in(['Asia/Jakarta'])], 'venue_name' => ['nullable', 'string', 'max:180'], 'venue_address' => ['nullable', 'string', 'max:300'], 'status' => ['required', Rule::in(['draft', 'scheduled', 'live', 'completed', 'postponed', 'cancelled', 'walkover'])], 'score_mode' => ['required', Rule::in(['automatic', 'manual'])], 'home_score' => ['nullable', 'integer', 'min:0'], 'away_score' => ['nullable', 'integer', 'min:0'], 'home_penalty_score' => ['nullable', 'integer', 'min:0'], 'away_penalty_score' => ['nullable', 'integer', 'min:0'], 'manual_score_reason' => ['nullable', 'string', 'max:1000'], 'count_for_standings' => ['boolean'], 'is_featured' => ['boolean'], 'is_public' => ['boolean'], 'cover_media_id' => ['nullable', 'exists:media,id'], 'short_report' => ['nullable', 'string', 'max:3000'], 'attendance' => ['nullable', 'integer', 'min:0']]);
+
+        $d['expected_end_at'] = $d['kickoff_at'] ? now()->parse($d['kickoff_at'], $d['timezone'])->addMinutes((int) $d['duration_minutes']) : null;
 
         if ($d['status'] === 'walkover' && $d['score_mode'] !== 'manual') {
             throw ValidationException::withMessages(['score_mode' => 'Skor pertandingan menang WO harus menggunakan mode manual.']);
@@ -171,6 +189,6 @@ class MatchController extends Controller
     {
         $eventService = app(MatchEventService::class);
 
-        return [...$m->only(['id', 'slug', 'season_id', 'match_type', 'matchday', 'round_name', 'home_club_id', 'away_club_id', 'timezone', 'venue_name', 'venue_address', 'status', 'score_mode', 'home_score', 'away_score', 'home_penalty_score', 'away_penalty_score', 'manual_score_reason', 'count_for_standings', 'is_featured', 'is_public', 'cover_media_id', 'short_report', 'attendance']), 'kickoff_at' => $m->kickoff_at?->format('Y-m-d\TH:i'), 'home' => $m->homeClub->display_name, 'away' => $m->awayClub->display_name, 'competition' => $m->season?->competition?->name, 'cover_url' => $m->cover?->url, 'lineups' => $m->lineups, 'events' => $m->events->map(fn ($event) => $eventService->resource($event)), 'reconciliation' => $eventService->reconciliation($m), 'mvp' => $m->mvpAward ? ['player' => $m->mvpAward->player?->display_name, 'status' => $m->mvpAward->status] : null];
+        return [...$m->only(['id', 'slug', 'season_id', 'match_type', 'matchday', 'round_name', 'home_club_id', 'away_club_id', 'duration_minutes', 'timezone', 'venue_name', 'venue_address', 'status', 'score_mode', 'home_score', 'away_score', 'home_penalty_score', 'away_penalty_score', 'manual_score_reason', 'count_for_standings', 'is_featured', 'is_public', 'cover_media_id', 'short_report', 'attendance']), 'kickoff_at' => $m->kickoff_at?->format('Y-m-d\TH:i'), 'expected_end_at' => $m->expected_end_at?->toIso8601String(), 'home' => $m->homeClub->display_name, 'away' => $m->awayClub->display_name, 'competition' => $m->season?->competition?->name, 'cover_url' => $m->cover?->url, 'lineups' => $m->lineups, 'events' => $m->events->map(fn ($event) => $eventService->resource($event)), 'reconciliation' => $eventService->reconciliation($m), 'mvp' => $m->mvpAward ? ['player' => $m->mvpAward->player?->display_name, 'status' => $m->mvpAward->status] : null];
     }
 }

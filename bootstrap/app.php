@@ -8,6 +8,8 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -32,5 +34,23 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->respond(function (Response $response): Response {
+            $status = $response->getStatusCode();
+            $supportedStatuses = [403, 404, 419, 429, 500, 503];
+
+            if (
+                request()->expectsJson()
+                || ! in_array($status, $supportedStatuses, true)
+                || ($status === 500 && config('app.debug'))
+            ) {
+                return $response;
+            }
+
+            return Inertia::render('Errors/Status', [
+                'status' => $status,
+                'isAuthenticated' => auth()->check(),
+                'canAccessDashboard' => auth()->user()?->isAdmin()
+                    || auth()->user()?->hasPermission('dashboard.view'),
+            ])->toResponse(request())->setStatusCode($status);
+        });
     })->create();

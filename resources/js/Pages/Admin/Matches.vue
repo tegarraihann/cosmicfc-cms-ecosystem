@@ -2,7 +2,8 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import ConfirmActionModal from "@/Components/Admin/ConfirmActionModal.vue";
 import { Head, Link, router, useForm, usePage } from "@inertiajs/vue3";
-import { computed, onMounted, ref, watch } from "vue";
+import axios from "axios";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 const p = defineProps({
         matches: Object,
         filters: Object,
@@ -90,6 +91,7 @@ const blank = () => ({
     home_club_id: "",
     away_club_id: "",
     kickoff_at: "",
+    duration_minutes: 120,
     timezone: "Asia/Jakarta",
     venue_name: "",
     venue_address: "",
@@ -192,6 +194,26 @@ onMounted(() => {
     )
         edit();
 });
+let heartbeatTimer = null;
+const heartbeatArea = computed(() =>
+    eventsOpen.value ? "events" : lineupOpen.value ? "lineup" : open.value && tab.value === "result" ? "result" : null,
+);
+async function sendHeartbeat() {
+    if (!editing.value?.id || !heartbeatArea.value) return;
+    try {
+        await axios.post(route("admin.matches.heartbeat", editing.value.id), { area: heartbeatArea.value });
+    } catch (_) {
+        // Kehadiran admin hanya optimasi pengingat; kegagalan tidak boleh mengganggu form.
+    }
+}
+watch([heartbeatArea, () => editing.value?.id], () => {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+    if (!heartbeatArea.value || !editing.value?.id) return;
+    sendHeartbeat();
+    heartbeatTimer = setInterval(sendHeartbeat, 60000);
+});
+onUnmounted(() => clearInterval(heartbeatTimer));
 const slugify = (value) =>
     value
         .toLowerCase()
@@ -938,6 +960,19 @@ function deleteEvent(e) {
                                 Jadwal, Liga, dan detail pertandingan.</small
                             ><em v-if="form.errors.kickoff_at">{{
                                 form.errors.kickoff_at
+                            }}</em></label
+                        ><label
+                            >Perkiraan durasi <b>*</b
+                            ><input
+                                v-model.number="form.duration_minutes"
+                                type="number"
+                                min="30"
+                                max="300"
+                                step="5"
+                            /><small
+                                >Dalam menit. Sistem memakai nilai ini untuk pengingat dan waktu selesai otomatis.</small
+                            ><em v-if="form.errors.duration_minutes">{{
+                                form.errors.duration_minutes
                             }}</em></label
                         ><label
                             >Nama lapangan<input

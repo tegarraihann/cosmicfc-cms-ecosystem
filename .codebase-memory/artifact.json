@@ -1,11 +1,11 @@
 {
     "schema_version": 2,
-    "commit": "a6de195b932946c9f550ac7befffbeb65915cae1",
-    "indexed_at": "2026-11-08T08:12:49Z",
+    "commit": "d1a001da16db9b276b34908cf89835f04dc0a481",
+    "indexed_at": "2026-11-08T15:24:00Z",
     "project": "C-laragon-www-prototipe-cosmic-cosmic-app",
-    "nodes": 6911,
-    "edges": 22837,
-    "original_size": 17956864,
-    "compressed_size": 3015499,
+    "nodes": 7006,
+    "edges": 23092,
+    "original_size": 18219008,
+    "compressed_size": 3041130,
     "compression_level": 9
 }

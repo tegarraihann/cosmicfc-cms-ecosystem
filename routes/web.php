@@ -111,6 +111,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin/matches')->name(
     Route::post('/', [MatchController::class, 'store'])->middleware('permission:matches.create')->name('store');
     Route::put('/{match}', [MatchController::class, 'update'])->middleware('permission:matches.update')->name('update');
     Route::put('/{match}/lineups', [MatchController::class, 'syncLineups'])->middleware('permission:matches.lineups')->name('lineups.sync');
+    Route::post('/{match}/heartbeat', [MatchController::class, 'heartbeat'])->middleware('permission:matches.view')->name('heartbeat');
     Route::post('/{match}/events', [MatchEventController::class, 'store'])->middleware('permission:match-events.create')->name('events.store');
     Route::put('/{match}/events/{event}', [MatchEventController::class, 'update'])->middleware('permission:match-events.update')->name('events.update');
     Route::delete('/{match}/events/{event}', [MatchEventController::class, 'destroy'])->middleware('permission:match-events.delete')->name('events.destroy');

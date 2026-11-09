@@ -14,11 +14,11 @@ class GameMatch extends Model
 
     protected $table = 'matches';
 
-    protected $fillable = ['uuid', 'slug', 'season_id', 'match_type', 'matchday', 'round_name', 'home_club_id', 'away_club_id', 'kickoff_at', 'timezone', 'venue_name', 'venue_address', 'status', 'score_mode', 'home_score', 'away_score', 'home_penalty_score', 'away_penalty_score', 'manual_score_reason', 'count_for_standings', 'is_featured', 'is_public', 'cover_media_id', 'short_report', 'attendance', 'published_at', 'created_by', 'updated_by'];
+    protected $fillable = ['uuid', 'slug', 'season_id', 'match_type', 'matchday', 'round_name', 'home_club_id', 'away_club_id', 'kickoff_at', 'duration_minutes', 'expected_end_at', 'result_finalized_at', 'timezone', 'venue_name', 'venue_address', 'status', 'score_mode', 'home_score', 'away_score', 'home_penalty_score', 'away_penalty_score', 'manual_score_reason', 'count_for_standings', 'is_featured', 'is_public', 'cover_media_id', 'short_report', 'attendance', 'published_at', 'created_by', 'updated_by'];
 
     protected function casts(): array
     {
-        return ['kickoff_at' => 'datetime', 'count_for_standings' => 'boolean', 'is_featured' => 'boolean', 'is_public' => 'boolean', 'published_at' => 'datetime'];
+        return ['kickoff_at' => 'datetime', 'expected_end_at' => 'datetime', 'result_finalized_at' => 'datetime', 'count_for_standings' => 'boolean', 'is_featured' => 'boolean', 'is_public' => 'boolean', 'published_at' => 'datetime'];
     }
 
     public function season(): BelongsTo
